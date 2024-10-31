@@ -11,7 +11,7 @@ dependencies = [
   'nomad-porous-materials; sys_platform != "win32"',
   "nomad-aitoolkit",
   "nomad-simulations==0.0.1",
-  "pynxtools[convert]==0.5.0",
+  "pynxtools[convert]==0.7.0",
   "nomad-schema-plugin-run>=1.0.1",
   "nomad-schema-plugin-simulation-workflow>=1.0.1",
   "nomad-normalizer-plugin-bandstructure>=1.0",
