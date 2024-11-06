@@ -7,3 +7,6 @@
 [submodule "packages/nomad-schema-plugin-simulations-data"]
 	path = packages/nomad-schema-plugin-simulations-data
 	url = git@github.com:nomad-coe/nomad-simulations.git
+[submodule "packages/nomad-schema-plugin-run"]
+	path = packages/nomad-schema-plugin-run
+	url = git@github.com:nomad-coe/nomad-schema-plugin-run.git
