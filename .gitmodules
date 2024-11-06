@@ -1,3 +1,9 @@
 [submodule "packages/nomad-FAIR"]
 	path = packages/nomad-FAIR
 	url = https://gitlab.mpcdf.mpg.de/nomad-lab/nomad-FAIR.git
+[submodule "packages/nomad-simulations"]
+	path = packages/nomad-simulations
+	url = git@github.com:nomad-coe/nomad-simulations.git
+[submodule "packages/nomad-schema-plugin-simulations-data"]
+	path = packages/nomad-schema-plugin-simulations-data
+	url = git@github.com:nomad-coe/nomad-simulations.git
