@@ -10,3 +10,9 @@
 [submodule "packages/nomad-schema-plugin-run"]
 	path = packages/nomad-schema-plugin-run
 	url = git@github.com:nomad-coe/nomad-schema-plugin-run.git
+[submodule "packages/nomad-parser-plugin-vasp"]
+	path = packages/nomad-parser-plugin-vasp
+	url = git@github.com:FAIRmat-NFDI/nomad-parser-vasp.git
+[submodule "packages/nomad-parser-plugin-wannier90"]
+	path = packages/nomad-parser-plugin-wannier90
+	url = git@github.com:FAIRmat-NFDI/nomad-parser-wannier90.git
