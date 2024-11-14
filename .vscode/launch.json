@@ -48,25 +48,25 @@
       "name": "simulations tests",
       "type": "python",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/packages/nomad-schema-plugin-simulations-data/",
       "program": "-m",
       "justMyCode": false,
       "env": {
         "_PYTEST_RAISE": "1"
       },
-      "args": ["pytest", "-sv", "${workspaceFolder}/packages/nomad-schema-plugin-simulations-data/tests/properties/test_band_gap.py", "-k", "test_default_quantities"]
+      "args": ["pytest", "-sv", "tests/properties/test_band_gap.py", "-k", "test_default_quantities"]
     },
     {
       "name": "legacy parsers tests",
       "type": "python",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/packages/nomad-parser-legacy-electronic/",
       "program": "-m",
       "justMyCode": false,
       "env": {
         "_PYTEST_RAISE": "1"
       },
-      "args": ["pytest", "-sv", "${workspaceFolder}/packages/nomad-parser-legacy-electronic/tests/test_magresparser.py"]
+      "args": ["pytest", "-sv", "tests/test_magresparser.py"]
     },
     {
       "name": "nomad parse",
