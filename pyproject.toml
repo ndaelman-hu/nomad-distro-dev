@@ -41,6 +41,7 @@ nomad-parser-vasp = { workspace = true }
 nomad-schema-plugin-run = { workspace = true }
 nomad-simulations = { workspace = true }
 nomad-parser-plugins-electronic = { workspace = true }
+nomad-normalizer-plugin-dos = {workspace = true}
 
 [tool.uv]
 extra-index-url = [
