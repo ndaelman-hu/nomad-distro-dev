@@ -22,3 +22,6 @@
 [submodule "packages/nomad-normalizer-plugin-bandstructure"]
 	path = packages/nomad-normalizer-plugin-bandstructure
 	url = git@github.com:nomad-coe/nomad-normalizer-plugin-bandstructure.git
+[submodule "packages/nomad-normalizer-plugin-system"]
+	path = packages/nomad-normalizer-plugin-system
+	url = git@github.com:nomad-coe/nomad-normalizer-plugin-system.git
