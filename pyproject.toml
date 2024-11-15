@@ -44,6 +44,9 @@ nomad-parser-plugins-electronic = { workspace = true }
 nomad-normalizer-plugin-dos = {workspace = true}
 nomad-normalizer-plugin-bandstructure = {workspace = true}
 nomad-normalizer-plugin-system = {workspace = true}
+nomad-normalizer-plugin-spectra = {workspace = true}
+nomad-normalizer-plugin-simulation-workflow = {workspace = true}
+nomad-parser-plugins-workflow = {workspace = true}
 
 [tool.uv]
 extra-index-url = [

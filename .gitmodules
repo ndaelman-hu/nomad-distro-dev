@@ -25,3 +25,12 @@
 [submodule "packages/nomad-normalizer-plugin-system"]
 	path = packages/nomad-normalizer-plugin-system
 	url = git@github.com:nomad-coe/nomad-normalizer-plugin-system.git
+[submodule "packages/nomad-normalizer-plugin-spectra"]
+	path = packages/nomad-normalizer-plugin-spectra
+	url = git@github.com:nomad-coe/nomad-normalizer-plugin-spectra.git
+[submodule "packages/nomad-schema-plugin-simulation-workflow"]
+	path = packages/nomad-schema-plugin-simulation-workflow
+	url = git@github.com:nomad-coe/nomad-schema-plugin-simulation-workflow.git
+[submodule "packages/nomad-normalizer-plugin-simulation-workflow"]
+	path = packages/nomad-normalizer-plugin-simulation-workflow
+	url = git@github.com:nomad-coe/nomad-normalizer-plugin-simulation-workflow.git
