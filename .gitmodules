@@ -1,18 +1,16 @@
-[submodule "nomad-simulations"]
-	path = packages/nomad-schema-plugin-simulations-data
-	url = git@github.com:nomad-coe/nomad-simulations.git
-[submodule "nomad-schema-plugin-run"]
-	path = packages/nomad-schema-plugin-run
-	url = git@github.com:nomad-coe/nomad-schema-plugin-run.git
-[submodule "nomad-parser-vasp"]
-	path = packages/nomad-parser-plugin-vasp
-	url = git@github.com:FAIRmat-NFDI/nomad-parser-vasp.git
-[submodule "nomad-parser-wannier90"]
-	path = packages/nomad-parser-plugin-wannier90
-	url = git@github.com:FAIRmat-NFDI/nomad-parser-wannier90.git
+
 [submodule "packages/nomad-lab"]
 	path = packages/nomad-FAIR
 	url = git@gitlab.mpcdf.mpg.de:nomad-lab/nomad-FAIR.git
+[submodule "nomad-schema-plugin-run"]
+	path = packages/nomad-schema-plugin-run
+	url = git@github.com:nomad-coe/nomad-schema-plugin-run.git
 [submodule "packages/nomad-parser-legacy-electronic"]
 	path = packages/nomad-parser-legacy-electronic
 	url = git@github.com:nomad-coe/electronic-parsers.git
+[submodule "nomad-simulations"]
+	path = packages/nomad-schema-plugin-simulations-data
+	url = git@github.com:nomad-coe/nomad-simulations.git
+[submodule "nomad-parser-vasp"]
+	path = packages/nomad-parser-plugin-vasp
+	url = git@github.com:FAIRmat-NFDI/nomad-parser-vasp.git
