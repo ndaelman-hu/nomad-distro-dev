@@ -14,3 +14,6 @@
 [submodule "nomad-parser-vasp"]
 	path = packages/nomad-parser-plugin-vasp
 	url = git@github.com:FAIRmat-NFDI/nomad-parser-vasp.git
+[submodule "packages/nomad-parser-plugin-boss"]
+	path = packages/nomad-parser-plugin-boss
+	url = git@github.com:FAIRmat-NFDI/nomad-parser-plugin-boss.git
