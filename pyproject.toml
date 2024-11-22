@@ -22,7 +22,6 @@ dependencies = [
   "nomad-parser-plugins-atomistic>=1.0",
   "nomad-parser-plugins-workflow>=1.0",
   "nomad-parser-plugins-database>=1.0",
-  "nomad-parser-vasp",
   "nomad-schema-plugin-run",
   "nomad-simulations",
   "nomad-parser-plugins-electronic[dev]>=1.0",
@@ -38,7 +37,6 @@ nomad-porous-materials = { git = "https://github.com/FAIRmat-NFDI/nomad-porous-m
 perovskite-solar-cell-database = { git = "https://github.com/FAIRmat-NFDI/nomad-perovskite-solar-cells-database.git", rev = "f394d21abafeb659729af0c94e5f90949fce01c1" }
 nomad-lab = { workspace = true }
 nomad-parser-plugins-electronic = { workspace = true }
-nomad-parser-vasp = { workspace = true }
 nomad-schema-plugin-run = { workspace = true }
 nomad-simulations = { workspace = true }
 
