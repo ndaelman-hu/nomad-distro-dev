@@ -14,10 +14,6 @@
 	path = packages/nomad-schema-plugin-simulations-data
 	url = git@github.com:nomad-coe/nomad-simulations.git
 	branch = develop
-[submodule "nomad-parser-vasp"]
-	path = packages/nomad-parser-plugin-vasp
-	url = git@github.com:FAIRmat-NFDI/nomad-parser-vasp.git
-	branch = first_version_extended
 [submodule "packages/nomad-parser-plugin-boss"]
 	path = packages/nomad-parser-plugin-boss
 	url = git@github.com:FAIRmat-NFDI/nomad-parser-plugin-boss.git

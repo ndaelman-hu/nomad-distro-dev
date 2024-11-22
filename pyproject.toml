@@ -23,7 +23,6 @@ dependencies = [
   "nomad-parser-plugins-workflow>=1.0",
   "nomad-parser-plugins-database>=1.0",
   "nomad-parser-plugin-boss",
-  "nomad-parser-vasp",
   "nomad-schema-plugin-run",
   "nomad-simulations",
   "nomad-parser-plugins-electronic[dev]>=1.0",
@@ -40,7 +39,6 @@ perovskite-solar-cell-database = { git = "https://github.com/FAIRmat-NFDI/nomad-
 nomad-lab = { workspace = true }
 nomad-parser-plugins-electronic = { workspace = true }
 nomad-parser-plugin-boss = { workspace = true }
-nomad-parser-vasp = { workspace = true }
 nomad-schema-plugin-run = { workspace = true }
 nomad-simulations = { workspace = true }
 
