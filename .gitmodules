@@ -1,3 +1,13 @@
-[submodule "packages/nomad-FAIR"]
+
+[submodule "packages/nomad-lab"]
 	path = packages/nomad-FAIR
-	url = https://gitlab.mpcdf.mpg.de/nomad-lab/nomad-FAIR.git
+	url = git@gitlab.mpcdf.mpg.de:nomad-lab/nomad-FAIR.git
+[submodule "nomad-schema-plugin-run"]
+	path = packages/nomad-schema-plugin-run
+	url = git@github.com:nomad-coe/nomad-schema-plugin-run.git
+[submodule "packages/nomad-parser-legacy-electronic"]
+	path = packages/nomad-parser-legacy-electronic
+	url = git@github.com:nomad-coe/electronic-parsers.git
+[submodule "nomad-simulations"]
+	path = packages/nomad-schema-plugin-simulations-data
+	url = git@github.com:nomad-coe/nomad-simulations.git

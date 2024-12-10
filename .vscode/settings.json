@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./packages/nomad-FAIR"
+        "./packages/nomad-FAIR",
+        ".venv/lib/python3.10/site-packages/__editable__"
     ]
 }
