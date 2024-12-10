@@ -48,13 +48,13 @@
       "name": "simulations tests",
       "type": "python",
       "request": "launch",
-      "cwd": "${workspaceFolder}/packages/nomad-schema-plugin-simulations-data/",
-      "program": "-m",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/.venv/bin/pytest",
       "justMyCode": false,
       "env": {
         "_PYTEST_RAISE": "1"
       },
-      "args": ["pytest", "-sv", "tests/properties/test_band_gap.py", "-k", "test_default_quantities"]
+      "args": ["-sv", "packages/nomad-schema-plugin-simulations-data/tests/properties/test_band_gap.py"]
     },
     {
       "name": "legacy parsers tests",
