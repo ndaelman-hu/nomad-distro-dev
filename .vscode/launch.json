@@ -24,6 +24,15 @@
       "program": "${workspaceFolder}/.venv/bin/nomad",
       "args": ["admin", "run", "worker"]
     },
+
+    {
+      "name": "appworker",
+      "type": "python",
+      "request": "launch",
+      "justMyCode": false,
+      "program": "${workspaceFolder}/.venv/bin/nomad",
+      "args": ["admin", "run", "appworker", "--dev"]
+    },
     {
       "name": "hub",
       "type": "python",
@@ -36,13 +45,13 @@
       "name": "nomad lab tests",
       "type": "python",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "program": "${workspaceFolder}/.venv/bin/pytest",
+      "cwd": "${workspaceFolder}/packages/nomad-FAIR/",
+      "program": "-m",
       "justMyCode": false,
       "env": {
         "_PYTEST_RAISE": "1"
       },
-      "args": ["-sv", "packages/nomad-FAIR/tests"]
+      "args": ["pytest", "-sv", "tests"]
     },
     {
       "name": "simulations tests",
@@ -66,7 +75,7 @@
       "env": {
         "_PYTEST_RAISE": "1"
       },
-      "args": ["pytest", "-sv", "tests/test_magresparser.py"]
+      "args": ["pytest", "-sv", "tests/test_cp2kparser.py"]
     },
     {
       "name": "nomad parse",
@@ -78,7 +87,7 @@
       "args": [
         "parse",
         "--show-archive",
-        "packages/nomad-FAIR/tests/data/parsers/vasp/vasp.xml",
+        "/home/nathan/Downloads/it0040_npts0045.dat",
         ">",
         "parser.test.json"
       ]
