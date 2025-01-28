@@ -36,13 +36,13 @@
       "name": "nomad lab tests",
       "type": "python",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/packages/nomad-FAIR",
       "program": "${workspaceFolder}/.venv/bin/pytest",
       "justMyCode": false,
       "env": {
         "_PYTEST_RAISE": "1"
       },
-      "args": ["-sv", "packages/nomad-FAIR/tests"]
+      "args": ["-sv", "tests"]
     },
     {
       "name": "nomad parse",
@@ -54,7 +54,7 @@
       "args": [
         "parse",
         "--show-archive",
-        "packacges/nomad-FAIR/tests/data/parsers/vasp/vasp.xml"
+        "packages/nomad-FAIR/tests/data/parsers/vasp/vasp.xml"
       ]
     },
     {
