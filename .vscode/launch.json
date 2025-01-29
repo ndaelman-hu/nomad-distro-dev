@@ -25,6 +25,14 @@
       "args": ["admin", "run", "worker"]
     },
     {
+      "name": "appworker",
+      "type": "python",
+      "request": "launch",
+      "justMyCode": false,
+      "program": "${workspaceFolder}/.venv/bin/nomad",
+      "args": ["admin", "run", "appworker", "--dev"]
+    },
+    {
       "name": "hub",
       "type": "python",
       "request": "launch",
