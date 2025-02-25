@@ -1,3 +1,9 @@
 [submodule "packages/nomad-FAIR"]
 	path = packages/nomad-FAIR
 	url  = git@gitlab.mpcdf.mpg.de:nomad-lab/nomad-FAIR.git
+[submodule "packages/nomad-parser-plugins-electronic"]
+	path = packages/nomad-parser-plugins-electronic
+	url = git@github.com:nomad-coe/electronic-parsers.git
+[submodule "packages/nomad-normalizer-plugin-bandstructure"]
+	path = packages/nomad-normalizer-plugin-bandstructure
+	url = git@github.com:nomad-coe/nomad-normalizer-plugin-bandstructure.git
