@@ -3,7 +3,7 @@ name = "nomad-distribution"
 description = "nomad distribution template"
 version = "0.1"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 dependencies = [
   "nomad-lab[parsing, infrastructure]>=1.3.10",
@@ -73,6 +73,10 @@ cmd = "ruff check ."
 
 [tool.poe.tasks.ruff-format]
 cmd = "ruff format . --check"
+
+[tool.poe.tasks.hub]
+cmd = "nomad admin run hub"
+cwd = "packages/nomad-FAIR"
 
 [tool.poe.tasks.gui]
 cmd = "yarn run"
