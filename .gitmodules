@@ -1,3 +1,6 @@
 [submodule "packages/nomad-FAIR"]
 	path = packages/nomad-FAIR
 	url  = git@gitlab.mpcdf.mpg.de:nomad-lab/nomad-FAIR.git
+[submodule "packages/nomad-parser-plugin-boss"]
+	path = packages/nomad-parser-plugin-boss
+	url = git@github.com:FAIRmat-NFDI/nomad-parser-plugin-boss.git
