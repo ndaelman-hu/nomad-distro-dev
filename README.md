@@ -1,5 +1,3 @@
-Start by forking this [main repository](https://github.com/FAIRmat-NFDI/nomad-distro-dev) that will house all your plugins.
-
 # NOMAD Dev Distribution
 
 Benefits
@@ -18,6 +16,8 @@ Below are instructions for how to create a dev environment for developing [nomad
 
 ## Basic infra
 
+Start by forking this [main repository](https://github.com/FAIRmat-NFDI/nomad-distro-dev) that will house all your plugins.
+
 1. Ensure you have [docker](https://docs.docker.com/engine/install/) installed.
    Docker nowadays comes with `docker compose` built in. Prior, you needed to
    install the stand-alone [docker-compose](https://docs.docker.com/compose/install/).
@@ -25,7 +25,6 @@ Below are instructions for how to create a dev environment for developing [nomad
 2. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (v0.5.14 and above).
    uv is required to manage your development environment. It's recommended to use the standalone installer or perform a global installation.
    (`brew install uv` on macOS or `dnf install uv` on Fedora).
-
 
 3. Install [node.js](https://nodejs.org/en) (v20) and [yarn](https://classic.yarnpkg.com/en/docs/install/)(v1.22). We will use it to setup the GUI.
 
@@ -53,7 +52,7 @@ plugin in VSCode to run the repository within a container, or alternatively, usi
    docker compose down
    ```
 
-## Developing nomad + plugins locally.
+## Developing nomad + plugins locally
 
 This guide explains how to set up a streamlined development environment for nomad-lab and its plugins using
 [`uv` workspaces](https://docs.astral.sh/uv/concepts/workspaces/#workspaces).
@@ -75,6 +74,7 @@ these two situations.
    ```bash
    git submodule update --init --recursive
    ```
+
 > [!TIP]
 >
 > To get more information on how to use git submodules are used to structure bigger
@@ -117,7 +117,7 @@ these two situations.
 
    There are two ways of adding to these two lists:
 
-   * You can use `uv add` which adds the dependency and the source in `pyproject.toml`
+   - You can use `uv add` which adds the dependency and the source in `pyproject.toml`
    and sets up the environment:
 
      ```bash
@@ -129,8 +129,8 @@ these two situations.
    ```bash
    uv add packages/nomad-measurements packages/PLUGIN_B packages/PLUGIN_C
    ```
- 
-   * You can modify the `pyproject.toml` file manually:
+
+   - You can modify the `pyproject.toml` file manually:
 
      ```toml
      [project]
@@ -167,12 +167,12 @@ these two situations.
  > ```bash
  > uv add https://github.com/FAIRmat-NFDI/nomad-measurements.git --branch <specific-branch-name>
  > ```
+ >
  > This command will not include the plugin in the `packages/` folder, and hence this plugin
- > will not be editable. 
+ > will not be editable.
 
 A complete list of plugins maintained by FAIRmat-NFDI can by found in the [overview page](https://github.com/FAIRmat-NFDI) of the FAIRmat-NFDI organisation.
 
-    
 ### Day-to-Day Development
 
 After the initial setup, here’s how to manage your daily development tasks.
@@ -187,7 +187,6 @@ After the initial setup, here’s how to manage your daily development tasks.
    It will be placed in the top-level directory of your repository, where all commands are executed from.
 
    For more information on configuration options, refer to the detailed [nomad configuration docs](https://nomad-lab.eu/prod/v1/staging/docs/reference/config.html#setting-values-from-a-nomadyaml).
-
 
 > [!NOTE]
 >
@@ -363,9 +362,5 @@ To keep your fork up to date with the latest changes from the original repositor
    ```
 
 2. Failed to install pycifrw.
-   
+
    The error usually indicates that clang was missing. `error: command 'clang'`. Installing `clang` should fix this issue.
-   
-
-
-
