@@ -28,8 +28,7 @@ Start by forking this [main repository](https://github.com/FAIRmat-NFDI/nomad-di
 
 3. Install [node.js](https://nodejs.org/en) (v20) and [yarn](https://classic.yarnpkg.com/en/docs/install/)(v1.22). We will use it to setup the GUI.
 
-4. For Windows users, nomad-lab processing doesn't work natively on the platform. We highly recommend using the [Devcontainer](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) 
-plugin in VSCode to run the repository within a container, or alternatively, using [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/about) (WSL) to run the project.
+4. For Windows users, nomad-lab processing doesn't work natively on the platform. We highly recommend using the [Devcontainer](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) plugin in VSCode to run the repository within a container, or alternatively, using [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/about) (WSL) to run the project.
 
 5. Clone the forked repository.
 
@@ -183,7 +182,7 @@ After the initial setup, here’s how to manage your daily development tasks.
    uv run poe setup
    ```
 
-   As part of the setup command, a `nomad.yaml` config file will be created, this file is used to configure nomad. 
+   As part of the setup command, a `nomad.yaml` config file will be created, this file is used to configure nomad.
    It will be placed in the top-level directory of your repository, where all commands are executed from.
 
    For more information on configuration options, refer to the detailed [nomad configuration docs](https://nomad-lab.eu/prod/v1/staging/docs/reference/config.html#setting-values-from-a-nomadyaml).
