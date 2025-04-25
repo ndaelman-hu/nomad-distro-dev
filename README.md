@@ -143,7 +143,14 @@ these two situations.
      ...
      nomad-measurements = { workspace = true }
      ```  
-   
+
+   The dependency name can be found in the package's `pyproject.toml` in the format
+
+   ```toml
+   [project]
+   name = "nomad-measurements"
+   ```
+
    Some of the plugins are already listed under
    `[project.dependencies]`. If you want to develop one of them, you
    have to add them under `[tool.uv.sources]`. We do this for `nomad-parser-plugins-electronics`.
