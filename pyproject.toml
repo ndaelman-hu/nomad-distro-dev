@@ -16,7 +16,8 @@ dependencies = [
   "nomad-parser-plugins-electronic>=1.0",
   "nomad-parser-plugins-atomistic>=1.0",
   "nomad-parser-plugins-database>=1.0",
-  "nomad-parser-plugin-boss"
+  "nomad-parser-plugin-boss",
+  "nomad-measurements"
 ]
 
 [tool.uv.workspace]
@@ -25,14 +26,17 @@ members = ["packages/*"]
 [tool.uv.sources]
 nomad-lab = { workspace = true }
 nomad-parser-plugin-boss = { workspace = true }
+nomad-measurements = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "nomad-lab[parsing, infrastructure, dev]>=1.3.4",
+  "poethepoet>=0.29.0",
+]
 
 [tool.uv]
 extra-index-url = [
   "https://gitlab.mpcdf.mpg.de/api/v4/projects/2187/packages/pypi/simple",
-]
-dev-dependencies = [
-  "nomad-lab[parsing, infrastructure, dev]>=1.3.4",
-  "poethepoet>=0.29.0",
 ]
 constraint-dependencies = ["hyperspy>=1.7.6"]
 required-version = ">=0.5.14"
