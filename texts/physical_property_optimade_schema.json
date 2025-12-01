@@ -1,0 +1,117 @@
+{
+  "title": "PhysicalPropertyResourceAttributes",
+  "type": "object",
+  "required": [
+    "name",
+    "is_derived"
+  ],
+  "properties": {
+    "name": {
+      "title": "Physical Property Name",
+      "type": "string",
+      "description": "Name of the physical property. Example: 'ElectronicBandGap'.\n\n- **Type**: string.\n- **Requirements/Conventions**:\n  - **Support**: REQUIRED in implementations.\n  - **Query**: MUST be a queryable property with support for all mandatory filter features.\n- **Examples**:\n  - `\"ElectronicBandGap\"`\n  - `\"TotalEnergy\"`\n  - `\"ElectronicDensityOfStates\"`",
+      "x-optimade-support": "must",
+      "x-optimade-queryable": "must"
+    },
+    "iri": {
+      "title": "Internationalized Resource Identifier",
+      "type": "string",
+      "format": "uri",
+      "default": "",
+      "description": "Internationalized Resource Identifier (IRI) pointing to a definition, typically within a larger, ontological framework.\n\n- **Type**: string (URI format).\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be empty string.\n  - **Query**: SHOULD be a queryable property.\n- **Examples**:\n  - `\"https://w3id.org/emmo/domain/electrochemistry#electrochemistry_43cd6e14_dd43_41b5_b5b4_4db94403c9e8\"`",
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "should"
+    },
+    "type": {
+      "title": "Physical Property Type",
+      "type": "string",
+      "description": "Type categorization of the physical property. Example: an 'ElectronicBandGap' can be 'direct' or 'indirect'.\n\n- **Type**: string.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be `null`.\n  - **Query**: SHOULD be a queryable property with support for all mandatory filter features.\n- **Examples**:\n  - `\"direct\"`\n  - `\"indirect\"`\n  - `\"kinetic\"`\n  - `\"potential\"`",
+      "nullable": true,
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "should"
+    },
+    "contribution_type": {
+      "title": "Contribution Type",
+      "type": "string",
+      "description": "Type of contribution to the physical property. Hence, only applies to contributions instances. Example: 'TotalEnergy' may have contributions like 'kinetic', 'potential', etc.\n\n- **Type**: string.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be `null`.\n  - **Query**: SHOULD be a queryable property.\n  - **Note**: Should only be set for contribution instances, not top-level properties.\n- **Examples**:\n  - `\"kinetic\"`\n  - `\"potential\"`\n  - `\"exchange\"`\n  - `\"correlation\"`",
+      "nullable": true,
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "should"
+    },
+    "label": {
+      "title": "Physical Property Label",
+      "type": "string",
+      "description": "Label for additional classification of the physical property. Example: an 'ElectronicBandGap' can be labeled as 'DFT' or 'GW' depending on the methodology used to calculate it.\n\n- **Type**: string.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be `null`.\n  - **Query**: SHOULD be a queryable property.\n- **Examples**:\n  - `\"DFT\"`\n  - `\"GW\"`\n  - `\"DMFT\"`\n  - `\"experimental\"`",
+      "nullable": true,
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "should"
+    },
+    "value": {
+      "title": "Physical Property Value",
+      "description": "The main property data value. The specific type and structure depend on the property.\n\n- **Type**: varies (number, array, object).\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations as structure varies by property type.\n  - **Query**: MAY be queryable depending on property type and implementation.\n- **Examples**:\n  - `1.5` (for a scalar band gap in eV)\n  - `[1.2, 1.8, 2.1]` (for multiple values)\n  - Complex structures for band structures, DOS, etc.",
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "is_derived": {
+      "title": "Is Derived Property",
+      "type": "boolean",
+      "default": false,
+      "description": "Flag indicating whether the physical property is derived from other physical properties. Distinction between directly parsed and derived physical properties: directly parsed properties come from simulation output files, derived properties are calculated from other properties.\n\n- **Type**: boolean.\n- **Requirements/Conventions**:\n  - **Support**: REQUIRED in implementations.\n  - **Query**: MUST be a queryable property with support for all mandatory filter features.\n- **Examples**:\n  - `false` (directly parsed from simulation output)\n  - `true` (calculated from other properties)",
+      "x-optimade-support": "must",
+      "x-optimade-queryable": "must"
+    },
+    "physical_property_ref": {
+      "title": "Physical Property Reference",
+      "type": "string",
+      "description": "Reference to the PhysicalProperty from which this property was derived. If populated, 'is_derived' should be true.\n\n- **Type**: string (reference/ID to another PhysicalProperty).\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be `null`.\n  - **Query**: SHOULD be a queryable property for traversing derivation chains.\n- **Examples**:\n  - `\"property_123\"`\n  - `\"total_energy_dft_001\"`",
+      "nullable": true,
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "should"
+    },
+    "is_scf_converged": {
+      "title": "SCF Convergence Status",
+      "type": "boolean",
+      "description": "Flag indicating whether the physical property is converged after a self-consistent field (SCF) process.\n\n- **Type**: boolean.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be `null`.\n  - **Query**: SHOULD be a queryable property for filtering converged results.\n- **Examples**:\n  - `true` (SCF converged)\n  - `false` (SCF not converged)\n  - `null` (not applicable or unknown)",
+      "nullable": true,
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "should"
+    },
+    "self_consistency_ref": {
+      "title": "Self Consistency Reference",
+      "type": "string",
+      "description": "Reference to the SelfConsistency section that defines the numerical settings used to converge the physical property.\n\n- **Type**: string (reference/ID to SelfConsistency settings).\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be `null`.\n  - **Query**: MAY be queryable for linking to convergence parameters.\n- **Examples**:\n  - `\"scf_settings_001\"`\n  - `\"convergence_params_dft\"`",
+      "nullable": true,
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "entity_ref": {
+      "title": "Entity Reference",
+      "type": "string",
+      "description": "Reference to the entity that the physical property refers to. Examples: macroscopic system vs specific atom in unit cell.\n\n- **Type**: string (reference/ID to Entity).\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be `null`.\n  - **Query**: MAY be queryable for entity-specific filtering.\n- **Examples**:\n  - `\"system_001\"`\n  - `\"atom_fe_1\"`\n  - `\"unit_cell\"`",
+      "nullable": true,
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "contributions": {
+      "title": "Property Contributions",
+      "type": "array",
+      "items": {
+        "$ref": "#"
+      },
+      "description": "Shallow list of contributions to the physical property. Does not necessarily entail a full partitioning. Each contribution is itself a PhysicalProperty.\n\n- **Type**: array of PhysicalProperty references.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations, i.e., MAY be empty array.\n  - **Query**: MAY be queryable for exploring property decompositions.\n  - **Note**: Contributions should not have nested contributions.\n- **Examples**:\n  - `[\"kinetic_energy_001\", \"potential_energy_001\"]` (for TotalEnergy)\n  - `[\"exchange_energy_001\", \"correlation_energy_001\"]` (for XCEnergy)",
+      "default": [],
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "metadata": {
+      "title": "Property Metadata",
+      "type": "object",
+      "description": "Additional metadata fields that may vary by property type and implementation.\n\n- **Type**: object (flexible schema).\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations.\n  - **Query**: Implementation-dependent queryability.\n- **Examples**:\n  - Units, dimensions, coordinate systems\n  - Calculation parameters\n  - Visualization settings",
+      "additionalProperties": true,
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Physical property resource attributes following OPTIMADE specification patterns. Represents computational output properties with support for derivation chains, contributions, and metadata.\n\n## Property Types\nThis base schema supports various physical property types including:\n- Electronic properties (band gaps, eigenvalues, density of states)\n- Energy properties (total, kinetic, potential energies)\n- Force properties (total forces, stress tensors)\n- Optical properties (permittivity, absorption spectra)\n- Thermodynamic properties (temperature, pressure, entropy)\n\n## Relationships\n- **Derivation**: Properties can reference other properties via `physical_property_ref`\n- **Contributions**: Complex properties can be decomposed into constituent parts\n- **Convergence**: SCF-computed properties track convergence status\n\n## Implementation Notes\n- Implementations should validate that `contribution_type` is only set for contribution instances\n- Contributions should not contain nested contributions\n- The `value` field structure varies significantly by property type\n- Plotting and visualization capabilities are supported but not part of this schema"
+}

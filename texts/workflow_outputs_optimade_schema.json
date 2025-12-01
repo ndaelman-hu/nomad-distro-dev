@@ -1,0 +1,358 @@
+{
+  "title": "NOMADWorkflowOutputsResourceAttributes",
+  "type": "object",
+  "required": [
+    "workflow_type"
+  ],
+  "properties": {
+    "workflow_type": {
+      "title": "Workflow Type",
+      "type": "string",
+      "description": "Type of computational workflow that generated these outputs.\n\n- **Type**: string.\n- **Requirements/Conventions**:\n  - **Support**: REQUIRED in implementations.\n  - **Query**: MUST be a queryable property with support for all mandatory filter features.\n- **Examples**:\n  - `\"GeometryOptimization\"`\n  - `\"MolecularDynamics\"`\n  - `\"Elastic\"`\n  - `\"Phonon\"`\n  - `\"DFTGWWorkflow\"`",
+      "enum": [
+        "SimulationWorkflow",
+        "ElectronicStructure", 
+        "Thermodynamics",
+        "BeyondDFT",
+        "Elastic",
+        "EquationOfState",
+        "GeometryOptimization",
+        "MolecularDynamics",
+        "Phonon",
+        "PhotonPolarization",
+        "SinglePoint",
+        "DFTGW",
+        "DFTTB",
+        "DFTTBDMFT",
+        "DMTMaxEnt",
+        "XS"
+      ],
+      "x-optimade-support": "must",
+      "x-optimade-queryable": "must"
+    },
+    "final_outputs": {
+      "title": "Final Outputs Reference",
+      "type": "string",
+      "description": "Reference to the final Outputs section containing computed physical properties.\n\n- **Type**: string (reference ID).\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported by all implementations.\n  - **Query**: MUST be queryable for linking to property results.\n- **Examples**:\n  - `\"outputs_001\"`\n  - `\"final_calculation_results\"`",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "must"
+    },
+    "dos": {
+      "title": "Electronic Density of States",
+      "type": "string",
+      "description": "Reference to ElectronicDensityOfStates for electronic structure workflows.\n\n- **Type**: string (reference to ElectronicDensityOfStates).\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for electronic structure workflows.\n  - **Query**: SHOULD be queryable for DOS-based filtering.",
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "n_values": {
+      "title": "Number of Values",
+      "type": "integer",
+      "description": "Number of thermodynamic property evaluation points.\n\n- **Type**: integer.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for thermodynamic workflows.\n  - **Query**: SHOULD be queryable for data size filtering.",
+      "minimum": 0,
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "temperature": {
+      "title": "Temperature Values",
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Array of temperature values from thermodynamic calculations (Kelvin).\n\n- **Type**: array of numbers.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for thermodynamic workflows.\n  - **Query**: SHOULD be queryable for temperature range filtering.",
+      "x-optimade-unit": "kelvin",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "pressure": {
+      "title": "Pressure Values",
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Array of pressure values from thermodynamic calculations (Pascal).\n\n- **Type**: array of numbers.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for thermodynamic workflows.\n  - **Query**: SHOULD be queryable for pressure range filtering.",
+      "x-optimade-unit": "pascal",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "elastic_constants_matrix_second_order": {
+      "title": "Elastic Constants Matrix",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
+      },
+      "description": "Second-order elastic constants matrix [6x6] (Pascal).\n\n- **Type**: 2D array of numbers (6x6).\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for elastic workflows.\n  - **Query**: MAY be queryable for mechanical property analysis.",
+      "x-optimade-unit": "pascal",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "may"
+    },
+    "bulk_modulus_hill": {
+      "title": "Bulk Modulus (Hill Average)",
+      "type": "number",
+      "description": "Bulk modulus calculated using Hill averaging method (Pascal).\n\n- **Type**: number.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for elastic workflows.\n  - **Query**: MUST be queryable for mechanical property filtering.",
+      "nullable": true,
+      "x-optimade-unit": "pascal",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "must"
+    },
+    "shear_modulus_hill": {
+      "title": "Shear Modulus (Hill Average)",
+      "type": "number",
+      "description": "Shear modulus calculated using Hill averaging method (Pascal).\n\n- **Type**: number.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for elastic workflows.\n  - **Query**: MUST be queryable for mechanical property filtering.",
+      "nullable": true,
+      "x-optimade-unit": "pascal",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "must"
+    },
+    "young_modulus_hill": {
+      "title": "Young's Modulus (Hill Average)",
+      "type": "number",
+      "description": "Young's modulus calculated using Hill averaging method (Pascal).\n\n- **Type**: number.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for elastic workflows.\n  - **Query**: MUST be queryable for mechanical property filtering.",
+      "nullable": true,
+      "x-optimade-unit": "pascal",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "must"
+    },
+    "is_mechanically_stable": {
+      "title": "Mechanical Stability",
+      "type": "boolean",
+      "description": "Boolean indicating mechanical stability of the structure.\n\n- **Type**: boolean.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for elastic workflows.\n  - **Query**: MUST be queryable for stability filtering.",
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "must"
+    },
+    "equilibrium_volume": {
+      "title": "Equilibrium Volume",
+      "type": "number",
+      "description": "Calculated equilibrium volume from equation of state fitting (m³).\n\n- **Type**: number.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for equation of state workflows.\n  - **Query**: SHOULD be queryable for volume analysis.",
+      "nullable": true,
+      "x-optimade-unit": "m^3",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "equilibrium_energy": {
+      "title": "Equilibrium Energy",
+      "type": "number",
+      "description": "Calculated equilibrium energy from equation of state fitting (Joule).\n\n- **Type**: number.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for equation of state workflows.\n  - **Query**: SHOULD be queryable for energy analysis.",
+      "nullable": true,
+      "x-optimade-unit": "joule",
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "n_steps": {
+      "title": "Number of Optimization Steps",
+      "type": "integer",
+      "description": "Number of saved optimization steps in geometry optimization.\n\n- **Type**: integer.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for geometry optimization workflows.\n  - **Query**: SHOULD be queryable for convergence analysis.",
+      "minimum": 0,
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "is_converged_geometry": {
+      "title": "Geometry Convergence",
+      "type": "boolean",
+      "description": "Boolean indicating whether geometry optimization converged.\n\n- **Type**: boolean.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for geometry optimization workflows.\n  - **Query**: MUST be queryable for convergence filtering.",
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "must"
+    },
+    "final_energy_difference": {
+      "title": "Final Energy Difference",
+      "type": "number",
+      "description": "Final energy difference in geometry optimization (Joule).\n\n- **Type**: number.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL for geometry optimization workflows.\n  - **Query**: MAY be queryable for convergence analysis.",
+      "nullable": true,
+      "x-optimade-unit": "joule",
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "final_force_maximum": {
+      "title": "Maximum Final Force",
+      "type": "number", 
+      "description": "Maximum final force in geometry optimization (Newton).\n\n- **Type**: number.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL for geometry optimization workflows.\n  - **Query**: MAY be queryable for convergence analysis.",
+      "nullable": true,
+      "x-optimade-unit": "newton",
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "n_imaginary_frequencies": {
+      "title": "Number of Imaginary Frequencies",
+      "type": "integer",
+      "description": "Number of imaginary phonon frequency modes.\n\n- **Type**: integer.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for phonon workflows.\n  - **Query**: MUST be queryable for stability analysis.",
+      "minimum": 0,
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "must"
+    },
+    "n_bands": {
+      "title": "Number of Phonon Bands",
+      "type": "integer",
+      "description": "Number of phonon bands calculated.\n\n- **Type**: integer.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for phonon workflows.\n  - **Query**: SHOULD be queryable for phonon analysis.",
+      "minimum": 0,
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "n_qpoints": {
+      "title": "Number of Q Points",
+      "type": "integer",
+      "description": "Number of q points in phonon calculation.\n\n- **Type**: integer.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for phonon workflows.\n  - **Query**: SHOULD be queryable for phonon analysis.",
+      "minimum": 0,
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "group_velocity": {
+      "title": "Phonon Group Velocities",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Phonon group velocities [n_qpoints, n_bands, 3] (meter/second).\n\n- **Type**: 3D array of numbers.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL for phonon workflows.\n  - **Query**: MAY be queryable for transport analysis.",
+      "nullable": true,
+      "x-optimade-unit": "meter/second",
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "n_polarizations": {
+      "title": "Number of Polarizations",
+      "type": "integer",
+      "description": "Number of photon polarizations calculated.\n\n- **Type**: integer.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for photon polarization workflows.\n  - **Query**: SHOULD be queryable for optical analysis.",
+      "minimum": 0,
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "spectrum_polarization": {
+      "title": "Polarization Spectra",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of references to polarization spectra.\n\n- **Type**: array of string references.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for photon polarization workflows.\n  - **Query**: MAY be queryable for spectral analysis.",
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "may"
+    },
+    "dft_results": {
+      "title": "DFT Results Reference",
+      "type": "string",
+      "description": "Reference to DFT electronic structure results in Beyond-DFT workflows.\n\n- **Type**: string (reference to ElectronicStructureResults).\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for Beyond-DFT workflows.\n  - **Query**: SHOULD be queryable for method chaining analysis.",
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "extended_results": {
+      "title": "Extended Results",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of references to extended electronic structure results (GW, DMFT, etc.).\n\n- **Type**: array of string references.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported for Beyond-DFT workflows.\n  - **Query**: MAY be queryable for advanced method analysis.",
+      "nullable": true,
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "may"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "StrainDiagrams": {
+      "title": "Strain Diagrams",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Kind of strain diagram (energy, d2E, cross-validation)."
+        },
+        "n_eta": {
+          "type": "integer",
+          "description": "Number of strain values used."
+        },
+        "n_deformations": {
+          "type": "integer",
+          "description": "Number of deformations applied."
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "description": "Energy/d2E/cross-validation values [n_deformations, n_eta]."
+        },
+        "eta": {
+          "type": "array",
+          "items": {
+            "type": "array", 
+            "items": {
+              "type": "number"
+            }
+          },
+          "description": "Eta values [n_deformations, n_eta]."
+        },
+        "stress_voigt_component": {
+          "type": "integer",
+          "description": "Voigt component index."
+        },
+        "polynomial_fit_order": {
+          "type": "integer",
+          "description": "Order of polynomial fit used."
+        }
+      }
+    },
+    "EOSFit": {
+      "title": "Equation of State Fit",
+      "type": "object",
+      "properties": {
+        "function_name": {
+          "type": "string",
+          "description": "Name of equation of state fitting function.",
+          "enum": ["murnaghan", "birch_murnaghan", "vinet", "pourier_tarantola"]
+        },
+        "fitted_energies": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Fitted energy values (Joule).",
+          "x-optimade-unit": "joule"
+        },
+        "bulk_modulus": {
+          "type": "number",
+          "description": "Calculated bulk modulus (Pascal).",
+          "x-optimade-unit": "pascal"
+        },
+        "bulk_modulus_derivative": {
+          "type": "number",
+          "description": "Pressure derivative of bulk modulus."
+        },
+        "equilibrium_volume": {
+          "type": "number",
+          "description": "Calculated equilibrium volume (m³).",
+          "x-optimade-unit": "m^3"
+        },
+        "equilibrium_energy": {
+          "type": "number",
+          "description": "Calculated equilibrium energy (Joule).",
+          "x-optimade-unit": "joule"
+        },
+        "rms_error": {
+          "type": "number",
+          "description": "Root-mean squared error of the fit."
+        }
+      }
+    }
+  },
+  "description": "NOMAD workflow output results resource attributes following OPTIMADE specification. Contains computed properties from various types of simulation workflows including structural, electronic, thermodynamic, and spectroscopic calculations.\n\n## Workflow Categories\n- **Structural Workflows**: Geometry optimization, elastic properties, equation of state\n- **Electronic Workflows**: Electronic structure, Beyond-DFT methods (GW, DMFT, TB)\n- **Dynamic Workflows**: Molecular dynamics, phonon calculations\n- **Spectroscopic Workflows**: Photon polarization, X-ray spectroscopy\n- **Thermodynamic Workflows**: Temperature, pressure, and volume relationships\n\n## Key Features\n- **Multi-scale Results**: From atomic forces to bulk mechanical properties\n- **Method Chaining**: Beyond-DFT workflows combine multiple electronic structure methods\n- **Trajectory Data**: Time/step-dependent properties for optimization and dynamics\n- **Convergence Metrics**: Flags and thresholds for computational convergence\n- **Material Properties**: Elastic constants, bulk/shear moduli, mechanical stability\n\n## Implementation Notes\n- Workflow type is required for proper result interpretation\n- Different workflows populate different subsets of properties\n- Elastic workflows provide comprehensive mechanical property analysis\n- Phonon workflows include stability analysis via imaginary frequencies\n- Beyond-DFT workflows reference multiple electronic structure results\n- Units follow SI conventions with OPTIMADE unit extensions\n- Arrays support multi-dimensional scientific data (tensors, trajectories, spectra)"
+}

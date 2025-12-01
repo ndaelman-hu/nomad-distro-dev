@@ -1,0 +1,468 @@
+{
+  "title": "NOMADOutputsResourceAttributes",
+  "type": "object",
+  "required": [
+    "model_system_ref",
+    "model_method_ref"
+  ],
+  "properties": {
+    "model_system_ref": {
+      "title": "Model System Reference",
+      "type": "string",
+      "description": "Reference to the ModelSystem section in which the output physical properties were calculated.\n\n- **Type**: string (reference ID).\n- **Requirements/Conventions**:\n  - **Support**: REQUIRED in implementations.\n  - **Query**: MUST be a queryable property with support for all mandatory filter features.\n- **Examples**:\n  - `\"system_001\"`\n  - `\"bulk_silicon_primitive_cell\"`",
+      "x-optimade-support": "must",
+      "x-optimade-queryable": "must"
+    },
+    "model_method_ref": {
+      "title": "Model Method Reference", 
+      "type": "string",
+      "description": "Reference to the ModelMethod section containing the details of the mathematical model with which the output physical properties were calculated.\n\n- **Type**: string (reference ID).\n- **Requirements/Conventions**:\n  - **Support**: REQUIRED in implementations.\n  - **Query**: MUST be a queryable property with support for all mandatory filter features.\n- **Examples**:\n  - `\"dft_pbe_001\"`\n  - `\"gw_method_002\"`",
+      "x-optimade-support": "must",
+      "x-optimade-queryable": "must"
+    },
+    "chemical_potentials": {
+      "title": "Chemical Potentials",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ChemicalPotential"
+      },
+      "description": "Array of chemical potential values calculated for the system.\n\n- **Type**: array of ChemicalPotential objects.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations.\n  - **Query**: SHOULD be queryable for filtering by chemical potential properties.\n- **Examples**: See ChemicalPotential schema definition.",
+      "default": [],
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "should"
+    },
+    "crystal_field_splittings": {
+      "title": "Crystal Field Splittings",
+      "type": "array", 
+      "items": {
+        "$ref": "#/$defs/CrystalFieldSplitting"
+      },
+      "description": "Array of crystal field splitting energies between degenerated orbitals.\n\n- **Type**: array of CrystalFieldSplitting objects.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations.\n  - **Query**: MAY be queryable for orbital analysis.",
+      "default": [],
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "hopping_matrices": {
+      "title": "Hopping Matrices",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/HoppingMatrix"  
+      },
+      "description": "Array of tight-binding hopping matrix elements.\n\n- **Type**: array of HoppingMatrix objects.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations.\n  - **Query**: MAY be queryable for tight-binding analysis.",
+      "default": [],
+      "x-optimade-support": "optional", 
+      "x-optimade-queryable": "may"
+    },
+    "electronic_eigenvalues": {
+      "title": "Electronic Eigenvalues",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ElectronicEigenvalues"
+      },
+      "description": "Array of electronic eigenvalue data at k-points.\n\n- **Type**: array of ElectronicEigenvalues objects.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported by implementations focused on electronic structure.\n  - **Query**: SHOULD be queryable for electronic property filtering.",
+      "default": [],
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "electronic_band_gaps": {
+      "title": "Electronic Band Gaps", 
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ElectronicBandGap"
+      },
+      "description": "Array of electronic band gap values (direct/indirect).\n\n- **Type**: array of ElectronicBandGap objects.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported by implementations focused on electronic structure.\n  - **Query**: MUST be queryable for band gap filtering.",
+      "default": [],
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "must"
+    },
+    "electronic_dos": {
+      "title": "Electronic Density of States",
+      "type": "array", 
+      "items": {
+        "$ref": "#/$defs/ElectronicDensityOfStates"
+      },
+      "description": "Array of electronic density of states data.\n\n- **Type**: array of ElectronicDensityOfStates objects.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported by implementations focused on electronic structure.\n  - **Query**: SHOULD be queryable for DOS analysis.",
+      "default": [],
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "fermi_surfaces": {
+      "title": "Fermi Surfaces",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/FermiSurface"
+      },
+      "description": "Array of Fermi surface topology data.\n\n- **Type**: array of FermiSurface objects.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations.\n  - **Query**: MAY be queryable for metallic systems analysis.",
+      "default": [],
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "electronic_band_structures": {
+      "title": "Electronic Band Structures",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ElectronicBandStructure"
+      },
+      "description": "Array of electronic band structure data along k-paths.\n\n- **Type**: array of ElectronicBandStructure objects.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported by implementations focused on electronic structure.\n  - **Query**: SHOULD be queryable for band structure analysis.",
+      "default": [],
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "total_energies": {
+      "title": "Total Energies",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TotalEnergy"
+      },
+      "description": "Array of total energy values for the system.\n\n- **Type**: array of TotalEnergy objects.\n- **Requirements/Conventions**:\n  - **Support**: MUST be supported by all implementations.\n  - **Query**: MUST be queryable for energy-based filtering and analysis.",
+      "default": [],
+      "x-optimade-support": "must",
+      "x-optimade-queryable": "must"
+    },
+    "kinetic_energies": {
+      "title": "Kinetic Energies",
+      "type": "array", 
+      "items": {
+        "$ref": "#/$defs/KineticEnergy"
+      },
+      "description": "Array of kinetic energy components.\n\n- **Type**: array of KineticEnergy objects.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations.\n  - **Query**: MAY be queryable for energy decomposition analysis.",
+      "default": [],
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "potential_energies": {
+      "title": "Potential Energies",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PotentialEnergy"
+      },
+      "description": "Array of potential energy components.\n\n- **Type**: array of PotentialEnergy objects.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations.\n  - **Query**: MAY be queryable for energy decomposition analysis.",
+      "default": [],
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "may"
+    },
+    "total_forces": {
+      "title": "Total Forces",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TotalForce"
+      },
+      "description": "Array of total forces on atoms in the system.\n\n- **Type**: array of TotalForce objects.\n- **Requirements/Conventions**:\n  - **Support**: SHOULD be supported by implementations focused on structural properties.\n  - **Query**: SHOULD be queryable for force analysis.",
+      "default": [],
+      "x-optimade-support": "should",
+      "x-optimade-queryable": "should"
+    },
+    "temperatures": {
+      "title": "Temperatures", 
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Temperature"
+      },
+      "description": "Array of system temperature values.\n\n- **Type**: array of Temperature objects.\n- **Requirements/Conventions**:\n  - **Support**: OPTIONAL support in implementations.\n  - **Query**: SHOULD be queryable for thermodynamic analysis.",
+      "default": [],
+      "x-optimade-support": "optional",
+      "x-optimade-queryable": "should"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "ChemicalPotential": {
+      "title": "Chemical Potential",
+      "type": "object",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "description": "Temperature at which chemical potential was calculated (Kelvin).",
+          "x-optimade-unit": "kelvin"
+        },
+        "particle_number": {
+          "type": "number", 
+          "description": "Number of particles in the system."
+        },
+        "fermi_energy": {
+          "type": "number",
+          "description": "Fermi energy level (Joule).",
+          "x-optimade-unit": "joule"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type classification of chemical potential."
+        }
+      }
+    },
+    "CrystalFieldSplitting": {
+      "title": "Crystal Field Splitting",
+      "type": "object", 
+      "properties": {
+        "n_orbitals": {
+          "type": "integer",
+          "description": "Number of orbitals involved in the splitting."
+        },
+        "value": {
+          "type": "number",
+          "description": "Crystal field splitting energy (Joule).",
+          "x-optimade-unit": "joule"
+        }
+      }
+    },
+    "HoppingMatrix": {
+      "title": "Hopping Matrix",
+      "type": "object",
+      "properties": {
+        "n_orbitals": {
+          "type": "integer",
+          "description": "Number of orbitals in the hopping matrix."
+        },
+        "degeneracy_factors": {
+          "type": "integer", 
+          "description": "Degeneracy factors for the orbitals."
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Complex hopping matrix elements (Joule). Array represents complex numbers as [real, imag] pairs.",
+          "x-optimade-unit": "joule"
+        }
+      }
+    },
+    "ElectronicEigenvalues": {
+      "title": "Electronic Eigenvalues",
+      "type": "object",
+      "properties": {
+        "value_contributions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BaseElectronicEigenvalues"
+          },
+          "description": "Array of eigenvalue contributions."
+        },
+        "spin_channel": {
+          "type": "integer",
+          "description": "Spin channel index (0 for up, 1 for down)."
+        },
+        "occupation": {
+          "type": "number",
+          "description": "Electronic occupation numbers."
+        },
+        "highest_occupied": {
+          "type": "number",
+          "description": "Highest occupied eigenvalue (Joule).",
+          "x-optimade-unit": "joule"
+        },
+        "lowest_unoccupied": {
+          "type": "number",
+          "description": "Lowest unoccupied eigenvalue (Joule).",
+          "x-optimade-unit": "joule"
+        },
+        "reciprocal_cell": {
+          "type": "string",
+          "description": "Reference to reciprocal lattice vectors."
+        }
+      }
+    },
+    "BaseElectronicEigenvalues": {
+      "title": "Base Electronic Eigenvalues",
+      "type": "object",
+      "properties": {
+        "n_bands": {
+          "type": "integer",
+          "description": "Number of electronic bands."
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Eigenvalue data array (Joule).",
+          "x-optimade-unit": "joule"
+        }
+      }
+    },
+    "ElectronicBandGap": {
+      "title": "Electronic Band Gap",
+      "type": "object",
+      "properties": {
+        "momentum_transfer": {
+          "type": "number", 
+          "description": "Momentum transfer for indirect band gaps."
+        },
+        "spin_channel": {
+          "type": "integer",
+          "description": "Spin channel index."
+        },
+        "value": {
+          "type": "number",
+          "description": "Band gap energy value (Joule).",
+          "x-optimade-unit": "joule"
+        }
+      }
+    },
+    "ElectronicDensityOfStates": {
+      "title": "Electronic Density of States",
+      "type": "object",
+      "properties": {
+        "projected_dos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DOSProfile"
+          },
+          "description": "Array of projected DOS profiles."
+        }
+      }
+    },
+    "DOSProfile": {
+      "title": "DOS Profile",
+      "type": "object",
+      "properties": {
+        "energies": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Energy points for DOS (Joule).",
+          "x-optimade-unit": "joule"
+        },
+        "values": {
+          "type": "array", 
+          "items": {
+            "type": "number"
+          },
+          "description": "DOS values at energy points (1/Joule).",
+          "x-optimade-unit": "1/joule"
+        }
+      }
+    },
+    "ElectronicBandStructure": {
+      "title": "Electronic Band Structure",
+      "type": "object",
+      "properties": {
+        "band_gap": {
+          "type": "string",
+          "description": "Reference to associated ElectronicBandGap."
+        }
+      }
+    },
+    "FermiSurface": {
+      "title": "Fermi Surface",
+      "type": "object",
+      "properties": {
+        "dimensionality": {
+          "type": "integer",
+          "description": "Dimensionality of the Fermi surface."
+        }
+      }
+    },
+    "TotalEnergy": {
+      "title": "Total Energy",
+      "type": "object",
+      "properties": {
+        "contributions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BaseEnergy"
+          },
+          "description": "Array of energy contributions."
+        },
+        "value": {
+          "type": "number",
+          "description": "Total energy value (Joule).",
+          "x-optimade-unit": "joule"
+        }
+      }
+    },
+    "BaseEnergy": {
+      "title": "Base Energy",
+      "type": "object", 
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type classification of energy contribution."
+        },
+        "value": {
+          "type": "number",
+          "description": "Energy value (Joule).",
+          "x-optimade-unit": "joule"
+        }
+      }
+    },
+    "KineticEnergy": {
+      "title": "Kinetic Energy",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string", 
+          "description": "Type classification of kinetic energy."
+        },
+        "value": {
+          "type": "number",
+          "description": "Kinetic energy value (Joule).",
+          "x-optimade-unit": "joule"
+        }
+      }
+    },
+    "PotentialEnergy": {
+      "title": "Potential Energy", 
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type classification of potential energy."
+        },
+        "value": {
+          "type": "number",
+          "description": "Potential energy value (Joule).",
+          "x-optimade-unit": "joule"
+        }
+      }
+    },
+    "TotalForce": {
+      "title": "Total Force",
+      "type": "object",
+      "properties": {
+        "contributions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BaseForce"
+          },
+          "description": "Array of force contributions."
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Force vector components (Newton).",
+          "x-optimade-unit": "newton"
+        }
+      }
+    },
+    "BaseForce": {
+      "title": "Base Force",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type classification of force contribution."
+        }
+      }
+    },
+    "Temperature": {
+      "title": "Temperature", 
+      "type": "object",
+      "properties": {
+        "origin": {
+          "type": "string",
+          "description": "Origin or source of temperature measurement."
+        },
+        "value": {
+          "type": "number",
+          "description": "Temperature value (Kelvin).",
+          "x-optimade-unit": "kelvin"
+        }
+      }
+    }
+  },
+  "description": "NOMAD simulation outputs resource attributes following OPTIMADE specification. Contains arrays of computed physical properties with references to the computational model and system.\n\n## Property Categories\n- **Electronic Properties**: eigenvalues, band gaps, DOS, band structures, Fermi surfaces\n- **Energy Properties**: total, kinetic, and potential energies with decompositions\n- **Force Properties**: forces on atoms with contribution analysis\n- **Thermodynamic Properties**: temperature, chemical potentials\n- **Specialized Properties**: crystal field splittings, hopping matrices for tight-binding\n\n## Key Relationships\n- **System Link**: `model_system_ref` connects to the simulated system\n- **Method Link**: `model_method_ref` connects to computational methodology\n- **Property Decomposition**: Many properties support contribution arrays\n- **Cross-References**: Properties can reference each other (e.g., band structure ↔ band gap)\n\n## Implementation Notes\n- All property arrays support empty defaults for optional properties\n- Energy properties should be queryable for thermodynamic analysis\n- Electronic properties are essential for materials science databases\n- Units are specified using `x-optimade-unit` extension for physical quantities\n- Complex numbers in hopping matrices represented as [real, imag] arrays"
+}
