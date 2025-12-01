@@ -38,49 +38,249 @@ NOMAD's OPTIMADE integration enables:
 
 ## Architecture Overview
 
-The OPTIMADE integration spans multiple architectural layers:
+### High-Level Integration Strategy
+
+NOMAD's OPTIMADE integration follows a **wrapper pattern**: it leverages the [OPTIMADE Python Tools](https://github.com/Materials-Consortia/optimade-python-tools) library for specification compliance while creating custom adapters to bridge NOMAD's internal architecture.
+
+**External Dependencies:**
+- **optimade-python-tools** (`optimade.server`, `optimade.filterparser`): Provides FastAPI endpoints, query parsing, and OPTIMADE specification compliance
+- **Lark Parser**: Filter syntax parsing (via optimade-python-tools)
+- **Pydantic Models**: Response validation (via optimade-python-tools)
+
+**NOMAD Adapters:** NOMAD creates custom adapters at three critical integration points:
+
+1. **Storage Backend Adapter**: Replaces MongoDB with Elasticsearch + Archive Files
+2. **Data Model Adapter**: Maps NOMAD's structure representation to OPTIMADE schema
+3. **Query Translation Adapter**: Translates OPTIMADE filters to Elasticsearch DSL
+
+### Component Interaction Flow
+
+```
+External Request
+    │
+    ▼
+┌──────────────────────────────────────────────────────────────┐
+│ OPTIMADE Python Tools (External Library)                     │
+│ - FastAPI endpoints (/optimade/structures)                   │
+│ - Lark filter parser (OPTIMADE query syntax)                 │
+│ - Pydantic response models                                   │
+└──────────────────────────────────────────────────────────────┘
+    │ Calls collection.find(params)
+    ▼
+┌──────────────────────────────────────────────────────────────┐
+│ NOMAD Storage Adapter (Custom Implementation)                │
+│ elasticsearch.py - StructureCollection                        │
+│ - Replaces optimade-python-tools' MongoDB backend            │
+│ - Implements find(), count(), __len__() interface            │
+└──────────────────────────────────────────────────────────────┘
+    │ Translates filter
+    ▼
+┌──────────────────────────────────────────────────────────────┐
+│ NOMAD Query Translation Adapter (Custom Implementation)      │
+│ filterparser.py - ElasticTransformer                          │
+│ - Extends optimade-python-tools ElasticTransformer           │
+│ - Maps OPTIMADE quantities → Elasticsearch fields            │
+│ - Translates OPTIMADE filter → Elasticsearch DSL             │
+└──────────────────────────────────────────────────────────────┘
+    │ Executes ES query
+    ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Elasticsearch (NOMAD Infrastructure)                         │
+│ - Indexed metadata: optimade.*, upload_id, entry_id          │
+│ - Fast filtering/sorting                                     │
+│ - Returns: list of (entry_id, upload_id) tuples             │
+└──────────────────────────────────────────────────────────────┘
+    │ Fetches full data
+    ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Archive Files (NOMAD Infrastructure)                         │
+│ - Full entry archives with complete structure data           │
+│ - Lazy-loaded based on requested response fields             │
+└──────────────────────────────────────────────────────────────┘
+    │ Constructs response
+    ▼
+OPTIMADE JSON Response
+```
+
+### Integration Layers
+
+The OPTIMADE integration spans four architectural layers, mixing external library usage with NOMAD-specific implementations:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Frontend Layer                           │
-│  InputOptimade.js - GUI component for filter validation      │
+│  InputOptimade.js - NOMAD React component                    │
+│  - Custom validation UI with autocomplete                    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    API Backend Layer                         │
-│  /optimade/__init__.py - FastAPI app integration             │
-│  elasticsearch.py - Custom Elasticsearch collection          │
-│  filterparser.py - Query translation                         │
-│  common.py - Provider-specific field management              │
+│                  API Backend Layer                           │
+│  [EXTERNAL] optimade.server - FastAPI app & endpoints        │
+│  [NOMAD] __init__.py - Library patching & configuration      │
+│  [NOMAD] elasticsearch.py - Storage backend adapter          │
+│  [NOMAD] filterparser.py - Query translation adapter         │
+│  [NOMAD] common.py - Provider-specific field discovery       │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                  Normalization Layer                         │
-│  normalizing/optimade.py - OptimadeNormalizer                │
+│  [NOMAD] normalizing/optimade.py - OptimadeNormalizer        │
+│  - Extracts OPTIMADE data from NOMAD structures              │
+│  - Populates OptimadeEntry during entry processing           │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Data Model Layer                          │
-│  datamodel/optimade.py - OptimadeEntry schema                │
+│  [NOMAD] datamodel/optimade.py - OptimadeEntry schema        │
+│  - NOMAD metainfo definitions matching OPTIMADE spec         │
+│  - Elasticsearch annotations for indexing                    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   Storage Backends                           │
-│  Elasticsearch (search/query) + Archive Files (full data)    │
+│  [NOMAD] Elasticsearch (indexed search metadata)             │
+│  [NOMAD] Archive Files (complete structure data)             │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Key Adapter Implementations
+
+NOMAD implements three critical adapters to bridge OPTIMADE Python Tools with its internal infrastructure:
+
+#### 1. Storage Backend Adapter (`elasticsearch.py`)
+
+**Purpose**: Replace optimade-python-tools' default MongoDB backend with NOMAD's Elasticsearch + Archive Files.
+
+**Background**: The OPTIMADE Python Tools library is designed around MongoDB as its primary storage backend. It provides:
+- `MongoCollection` class that queries MongoDB directly
+- Assumes OPTIMADE data is stored as documents in a MongoDB collection
+- Filter transformers that generate MongoDB query syntax
+- Built-in test data and example implementations using MongoDB
+
+**NOMAD's Challenge**: NOMAD's architecture doesn't use MongoDB for structure storage. Instead:
+- **Elasticsearch** stores indexed metadata for fast search/filtering
+- **Archive Files** (HDF5-based) store complete entry data in a separate file system
+- OPTIMADE data exists as a subsection (`metadata.optimade.*`) within larger entry archives
+
+**Solution**: NOMAD implements a custom `StructureCollection` that:
+1. **Inherits** from `EntryCollection` (the abstract base class from optimade-python-tools)
+2. **Implements** the required interface methods:
+   - `find(params)` → Executes Elasticsearch query, loads archives, returns OPTIMADE-formatted results
+   - `__len__()` → Returns total count of queryable structures
+   - `count(**kwargs)` → Not implemented (MongoDB-specific method, unused in NOMAD's flow)
+3. **Provides** a custom `ElasticTransformer` that translates OPTIMADE filters to Elasticsearch DSL (instead of MongoDB queries)
+
+**Replacement Mechanism** (`nomad/app/optimade/__init__.py:155-162`):
+```python
+# Import default structures router from optimade-python-tools
+from optimade.server.routers import structures
+
+# Import NOMAD's custom Elasticsearch-based collection
+from .elasticsearch import StructureCollection
+
+# Replace the default MongoDB collection with NOMAD's implementation
+structures.structures_coll = StructureCollection()
+```
+
+This replacement happens **before** the FastAPI app starts, so all OPTIMADE endpoints automatically use NOMAD's Elasticsearch backend instead of MongoDB.
+
+**Key Pattern**: Two-phase data retrieval
+1. **Search Phase**: Query Elasticsearch for entry_id/upload_id (fast, indexed metadata)
+   - Elasticsearch contains: `optimade.nelements`, `optimade.chemical_formula_*`, `entry_id`, `upload_id`
+   - Returns: List of matching entry identifiers
+2. **Retrieval Phase**: Load full archive data for matched entries (on-demand, file I/O)
+   - Archive files contain: Complete `OptimadeEntry` with all structure data
+   - Only requested response fields are loaded (lazy loading optimization)
+
+**Benefits over MongoDB**:
+- Leverages NOMAD's existing search infrastructure (no separate database)
+- Elasticsearch provides superior performance for complex analytical queries
+- Archive files enable versioning and efficient storage of large datasets
+- No data duplication (OPTIMADE data stored once, indexed in Elasticsearch)
+
+**Trade-off**: Two-phase retrieval adds latency compared to MongoDB's single query, but lazy loading and caching mitigate this.
+
+*See [API Backend Layer → Elasticsearch Collection](#2-elasticsearch-collection-elasticsearchpy) for detailed implementation.*
+
+#### 2. Query Translation Adapter (`filterparser.py`)
+
+**Purpose**: Translate OPTIMADE filter syntax to Elasticsearch DSL queries.
+
+**Extends**: `ElasticTransformer` from optimade-python-tools
+- Maps OPTIMADE field names → Elasticsearch backend fields (e.g., `nelements` → `optimade.nelements`)
+- Implements custom operators (e.g., `HAS ONLY` = `HAS ALL` + length check)
+- Handles nested quantities (elements/elements_ratios)
+
+**Key Pattern**: Cached transformer with quantity mapping
+```python
+OPTIMADE: "elements HAS ONLY 'Si', 'O'"
+    ↓ ElasticTransformer
+Elasticsearch: Q('nested', ...) & Q('term', nelements=2)
+```
+
+*See [API Backend Layer → Filter Parser](#3-filter-parser-filterparsepy) for detailed implementation.*
+
+#### 3. Data Model Adapter (`datamodel/optimade.py` + `normalizing/optimade.py`)
+
+**Purpose**: Map NOMAD's internal structure representation to OPTIMADE-compliant schema.
+
+**Components**:
+- **Data Model** (`datamodel/optimade.py`): Defines `OptimadeEntry` schema using NOMAD's metainfo system
+- **Normalizer** (`normalizing/optimade.py`): Extracts data from NOMAD structures during entry processing
+
+**Key Pattern**: Normalization pipeline
+```
+NOMAD Entry Processing
+    ↓
+SystemNormalizer (creates system.atoms, lattice_vectors, etc.)
+    ↓
+OptimadeNormalizer (extracts → optimade.elements, chemical_formula_*, etc.)
+    ↓
+Elasticsearch Indexing
+```
+
+*See [Data Model Layer](#data-model-layer) and [Normalization Layer](#normalization-layer) for details.*
+
+### Library Patching Strategy
+
+NOMAD applies extensive runtime patches to optimade-python-tools to accommodate NOMAD-specific requirements:
+
+1. **ValidIdentifier Patching**: Replace strict regex validation to accept `_nmd_` prefix for provider fields
+2. **Logger Replacement**: Inject NOMAD's logger before library imports
+3. **Collection Replacement**: Swap MongoDB collection with custom `StructureCollection`
+4. **Config Injection**: Set provider metadata and base URLs
+
+**Why Patching?** optimade-python-tools is designed for MongoDB-backed databases. Rather than fork, NOMAD patches at runtime to redirect functionality to Elasticsearch while maintaining specification compliance.
+
+*See [Key Implementation Details](#key-implementation-details) for patching details.*
+
+### Data Flow Example
+
+**Query**: `/optimade/structures?filter=elements HAS "Si" AND nelements < 3`
+
+1. **optimade-python-tools** receives request at FastAPI endpoint
+2. **Lark Parser** (external) parses filter string → parse tree
+3. **ElasticTransformer** (NOMAD adapter) transforms parse tree → Elasticsearch query
+4. **StructureCollection** (NOMAD adapter) executes Elasticsearch search
+   - Query: `Q('nested', ...) & Q('range', optimade.nelements={'lt': 3}) & Q('term', processed=True)`
+   - Returns: `[(entry_id_1, upload_id_1), (entry_id_2, upload_id_2), ...]`
+5. **Archive Files** (NOMAD) loaded for each matched entry
+6. **Runtime Corrections** (NOMAD) fix legacy formula formats
+7. **Provider Fields** (NOMAD) resolved via JSON path traversal
+8. **optimade-python-tools** serializes response using Pydantic models
+9. **OPTIMADE JSON** returned to client
 
 **File Locations:**
 - Data Model: `nomad/datamodel/optimade.py` (332 lines)
 - Normalizer: `nomad/normalizing/optimade.py` (212 lines)
 - API Backend: `nomad/app/optimade/__init__.py` (196 lines)
-- Elasticsearch: `nomad/app/optimade/elasticsearch.py` (287 lines)
-- Filter Parser: `nomad/app/optimade/filterparser.py` (175 lines)
-- Common: `nomad/app/optimade/common.py` (84 lines)
+- Elasticsearch Adapter: `nomad/app/optimade/elasticsearch.py` (287 lines)
+- Filter Parser Adapter: `nomad/app/optimade/filterparser.py` (175 lines)
+- Provider Fields: `nomad/app/optimade/common.py` (84 lines)
 - Frontend: `gui/src/components/search/input/InputOptimade.js`
 - Tests: `tests/app/test_optimade.py`
 
