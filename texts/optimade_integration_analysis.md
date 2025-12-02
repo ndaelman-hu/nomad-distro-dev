@@ -43,15 +43,15 @@ NOMAD's OPTIMADE integration enables:
 NOMAD's OPTIMADE integration follows a **wrapper pattern**: it leverages the [OPTIMADE Python Tools](https://github.com/Materials-Consortia/optimade-python-tools) library for specification compliance while creating custom adapters to bridge NOMAD's internal architecture.
 
 **External Dependencies:**
-- **optimade-python-tools** (`optimade.server`, `optimade.filterparser`): Provides FastAPI endpoints, query parsing, and OPTIMADE specification compliance
-- **Lark Parser**: Filter syntax parsing (via optimade-python-tools)
+- **optimade-python-tools** (`optimade.server`, `optimade.filterparser`, `optimade.filtertransformers.elasticsearch`): Provides FastAPI endpoints, query parsing, Elasticsearch transformers, and OPTIMADE specification compliance
+- **Lark Parser**: Python parsing library for building parsers from grammars. optimade-python-tools uses Lark to parse OPTIMADE filter syntax into abstract syntax trees (AST) that can be transformed into database queries. Lark handles the complex grammar of OPTIMADE's query language (operators like `HAS`, `AND`, `OR`, property references, etc.)
 - **Pydantic Models**: Response validation (via optimade-python-tools)
 
-**NOMAD Adapters:** NOMAD creates custom adapters at three critical integration points:
+**NOMAD's Integration Strategy:** NOMAD leverages optimade-python-tools' **built-in Elasticsearch support** and extends it at three critical integration points:
 
-1. **Storage Backend Adapter**: Replaces MongoDB with Elasticsearch + Archive Files
+1. **Storage Adapter**: Uses optimade-python-tools' Elasticsearch backend but adds Archive Files integration for complete structure data
 2. **Data Model Adapter**: Maps NOMAD's structure representation to OPTIMADE schema
-3. **Query Translation Adapter**: Translates OPTIMADE filters to Elasticsearch DSL
+3. **Query Extension**: Extends optimade-python-tools' ElasticTransformer with custom operators and NOMAD-specific field mappings
 
 ### Component Interaction Flow
 
@@ -62,25 +62,27 @@ External Request
 ┌──────────────────────────────────────────────────────────────┐
 │ OPTIMADE Python Tools (External Library)                     │
 │ - FastAPI endpoints (/optimade/structures)                   │
-│ - Lark filter parser (OPTIMADE query syntax)                 │
+│ - Lark filter parser (OPTIMADE query syntax → AST)           │
+│ - ElasticTransformer (AST → Elasticsearch DSL)               │
 │ - Pydantic response models                                   │
 └──────────────────────────────────────────────────────────────┘
     │ Calls collection.find(params)
     ▼
 ┌──────────────────────────────────────────────────────────────┐
-│ NOMAD Storage Adapter (Custom Implementation)                │
+│ NOMAD Storage Adapter (Extends Built-in)                     │
 │ elasticsearch.py - StructureCollection                        │
-│ - Replaces optimade-python-tools' MongoDB backend            │
-│ - Implements find(), count(), __len__() interface            │
+│ - Uses optimade-python-tools' EntryCollection interface      │
+│ - Adds Archive Files integration for complete data           │
+│ - Implements find(), __len__() with two-phase retrieval      │
 └──────────────────────────────────────────────────────────────┘
-    │ Translates filter
+    │ Uses extended transformer
     ▼
 ┌──────────────────────────────────────────────────────────────┐
-│ NOMAD Query Translation Adapter (Custom Implementation)      │
-│ filterparser.py - ElasticTransformer                          │
-│ - Extends optimade-python-tools ElasticTransformer           │
-│ - Maps OPTIMADE quantities → Elasticsearch fields            │
-│ - Translates OPTIMADE filter → Elasticsearch DSL             │
+│ NOMAD Query Extension (Extends Built-in ElasticTransformer)  │
+│ filterparser.py - ElasticTransformer (extends OPTElastic...)  │
+│ - Inherits optimade-python-tools' ElasticTransformer         │
+│ - Adds custom operators (HAS ONLY)                           │
+│ - Maps quantities to NOMAD's optimade.* Elasticsearch fields │
 └──────────────────────────────────────────────────────────────┘
     │ Executes ES query
     ▼
@@ -151,76 +153,154 @@ The OPTIMADE integration spans four architectural layers, mixing external librar
 
 NOMAD implements three critical adapters to bridge OPTIMADE Python Tools with its internal infrastructure:
 
-#### 1. Storage Backend Adapter (`elasticsearch.py`)
+#### 1. Storage Adapter (`elasticsearch.py`)
 
-**Purpose**: Replace optimade-python-tools' default MongoDB backend with NOMAD's Elasticsearch + Archive Files.
+**Purpose**: Extend optimade-python-tools' Elasticsearch support to integrate with NOMAD's Archive Files architecture.
 
-**Background**: The OPTIMADE Python Tools library is designed around MongoDB as its primary storage backend. It provides:
-- `MongoCollection` class that queries MongoDB directly
-- Assumes OPTIMADE data is stored as documents in a MongoDB collection
-- Filter transformers that generate MongoDB query syntax
-- Built-in test data and example implementations using MongoDB
+**Background**: The OPTIMADE Python Tools library supports **two backends out-of-the-box**:
+- **MongoDB** (`optimade.server.entry_collections.mongo.MongoCollection`): Original reference implementation
+- **Elasticsearch** (`optimade.server.entry_collections.elasticsearch.ElasticCollection`): Alternative backend with built-in `ElasticTransformer` for query translation
 
-**NOMAD's Challenge**: NOMAD's architecture doesn't use MongoDB for structure storage. Instead:
-- **Elasticsearch** stores indexed metadata for fast search/filtering
-- **Archive Files** (HDF5-based) store complete entry data in a separate file system
+Both assume OPTIMADE data is stored entirely within the database (MongoDB documents or Elasticsearch documents).
+
+**NOMAD's Architecture Challenge**: NOMAD has a hybrid storage model that differs from both built-in backends:
+- **Elasticsearch** stores *indexed metadata only* for fast search/filtering (`optimade.nelements`, `optimade.chemical_formula_*`, etc.)
+- **Archive Files** (HDF5-based) store *complete entry data* in a separate file system
 - OPTIMADE data exists as a subsection (`metadata.optimade.*`) within larger entry archives
+- Full structure data (lattice vectors, atomic positions, species) only exists in archives, not Elasticsearch
 
 **Solution**: NOMAD implements a custom `StructureCollection` that:
 1. **Inherits** from `EntryCollection` (the abstract base class from optimade-python-tools)
-2. **Implements** the required interface methods:
-   - `find(params)` → Executes Elasticsearch query, loads archives, returns OPTIMADE-formatted results
-   - `__len__()` → Returns total count of queryable structures
-   - `count(**kwargs)` → Not implemented (MongoDB-specific method, unused in NOMAD's flow)
-3. **Provides** a custom `ElasticTransformer` that translates OPTIMADE filters to Elasticsearch DSL (instead of MongoDB queries)
+2. **Uses** optimade-python-tools' `ElasticTransformer` for query translation (see next section)
+3. **Implements** the required interface methods with a two-phase retrieval pattern:
+   - `find(params)` → Executes Elasticsearch query for identifiers, then loads full data from archives
+   - `__len__()` → Returns total count of queryable structures from Elasticsearch
+   - `count(**kwargs)` → Not implemented (unused in the flow)
 
-**Replacement Mechanism** (`nomad/app/optimade/__init__.py:155-162`):
+**Collection Replacement** (`nomad/app/optimade/__init__.py:155-162`):
 ```python
 # Import default structures router from optimade-python-tools
 from optimade.server.routers import structures
 
-# Import NOMAD's custom Elasticsearch-based collection
+# Import NOMAD's custom collection (uses Elasticsearch + Archive Files)
 from .elasticsearch import StructureCollection
 
-# Replace the default MongoDB collection with NOMAD's implementation
+# Replace whatever collection was configured with NOMAD's implementation
 structures.structures_coll = StructureCollection()
 ```
 
-This replacement happens **before** the FastAPI app starts, so all OPTIMADE endpoints automatically use NOMAD's Elasticsearch backend instead of MongoDB.
+This replacement happens **before** the FastAPI app starts, so all OPTIMADE endpoints automatically use NOMAD's custom collection.
 
 **Key Pattern**: Two-phase data retrieval
-1. **Search Phase**: Query Elasticsearch for entry_id/upload_id (fast, indexed metadata)
-   - Elasticsearch contains: `optimade.nelements`, `optimade.chemical_formula_*`, `entry_id`, `upload_id`
-   - Returns: List of matching entry identifiers
-2. **Retrieval Phase**: Load full archive data for matched entries (on-demand, file I/O)
-   - Archive files contain: Complete `OptimadeEntry` with all structure data
-   - Only requested response fields are loaded (lazy loading optimization)
 
-**Benefits over MongoDB**:
-- Leverages NOMAD's existing search infrastructure (no separate database)
-- Elasticsearch provides superior performance for complex analytical queries
-- Archive files enable versioning and efficient storage of large datasets
-- No data duplication (OPTIMADE data stored once, indexed in Elasticsearch)
+**Why Two Phases?** This is a fundamental architectural difference from how optimade-python-tools expects backends to work:
 
-**Trade-off**: Two-phase retrieval adds latency compared to MongoDB's single query, but lazy loading and caching mitigate this.
+| Aspect | optimade-python-tools Expectation | NOMAD's Architecture |
+|--------|-----------------------------------|---------------------|
+| **Data Storage** | Complete OPTIMADE data in database (ES or MongoDB) | Indexed metadata in ES, complete data in Archive Files |
+| **What's in Database** | All fields including large arrays (`lattice_vectors`, `cartesian_site_positions`, `species`) | Only searchable/sortable fields (`nelements`, `chemical_formula_*`, `entry_id`) |
+| **Large Arrays** | Stored in database documents/indices | Stored in HDF5-based Archive Files |
+| **Query Result** | Complete OPTIMADE structure data | Entry identifiers only |
+| **Data Flow** | `Query → Complete documents → Response` | `Query → IDs → Load archives → Response` |
+
+**Why doesn't NOMAD store everything in Elasticsearch?**
+
+1. **Data Volume**: Structure data can be massive (thousands of atoms × 3D positions × multiple timesteps/frames). Storing this in ES would be expensive and inefficient.
+
+2. **Existing Architecture**: NOMAD's Archive Files are the **source of truth** for all entry data. Elasticsearch serves as an *index* for fast search, not primary storage.
+
+3. **Performance Optimization**:
+   - ES excels at filtering on indexed scalar/keyword fields
+   - ES is poor at storing/retrieving large numerical arrays compared to HDF5
+   - Archive Files use compression optimized for scientific array data
+
+4. **Storage Efficiency**: HDF5 provides better compression and faster array access than ES for large numerical datasets.
+
+5. **Separation of Concerns**: ES for search/filter, Archive Files for complete data retrieval matches NOMAD's overall architecture.
+
+**Two-Phase Implementation:**
+
+1. **Phase 1 - Search (Elasticsearch)**: Fast filtering on indexed metadata
+   ```
+   Query: elements HAS "Si" AND nelements = 2
+   Elasticsearch contains: optimade.nelements, optimade.chemical_formula_*, entry_id, upload_id
+   Returns: [(entry_id_1, upload_id_1), (entry_id_2, upload_id_2), ...]
+   ```
+
+2. **Phase 2 - Retrieval (Archive Files)**: Load complete structure data on-demand
+   ```
+   For each (entry_id, upload_id):
+     Load archive file → Extract metadata.optimade.* section → Return full OPTIMADE structure
+   Only requested response fields are loaded (lazy loading optimization)
+   ```
+
+**Benefits of NOMAD's Approach**:
+- Leverages existing search infrastructure (no separate OPTIMADE database)
+- Elasticsearch provides superior performance for complex analytical queries on indexed fields
+- Archive files enable versioning, data lineage, and efficient storage of large datasets
+- No data duplication (OPTIMADE data stored once in archives, indexed in Elasticsearch)
+- Consistent with NOMAD's architecture across all data types
+
+**Trade-off**: Two-phase retrieval adds latency compared to single-query backends (MongoDB or ES-only), but lazy loading, upload file handle caching, and batch processing mitigate this impact.
 
 *See [API Backend Layer → Elasticsearch Collection](#2-elasticsearch-collection-elasticsearchpy) for detailed implementation.*
 
-#### 2. Query Translation Adapter (`filterparser.py`)
+#### 2. Query Extension (`filterparser.py`)
 
-**Purpose**: Translate OPTIMADE filter syntax to Elasticsearch DSL queries.
+**Purpose**: Extend optimade-python-tools' Elasticsearch query translation with NOMAD-specific mappings and custom operators.
 
-**Extends**: `ElasticTransformer` from optimade-python-tools
-- Maps OPTIMADE field names → Elasticsearch backend fields (e.g., `nelements` → `optimade.nelements`)
-- Implements custom operators (e.g., `HAS ONLY` = `HAS ALL` + length check)
-- Handles nested quantities (elements/elements_ratios)
+**Uses and Extends**: `ElasticTransformer` from `optimade.filtertransformers.elasticsearch`
 
-**Key Pattern**: Cached transformer with quantity mapping
+NOMAD's approach:
 ```python
-OPTIMADE: "elements HAS ONLY 'Si', 'O'"
-    ↓ ElasticTransformer
-Elasticsearch: Q('nested', ...) & Q('term', nelements=2)
+from optimade.filtertransformers.elasticsearch import (
+    ElasticTransformer as OPTElasticTransformer,
+)
+
+class ElasticTransformer(OPTElasticTransformer):
+    # Inherits all standard OPTIMADE → Elasticsearch translation
+    # Adds custom extensions below
 ```
+
+**What optimade-python-tools provides:**
+- Lark parser: `OPTIMADE filter string` → `Abstract Syntax Tree (AST)`
+- ElasticTransformer: `AST` → `Elasticsearch DSL Query objects`
+- Standard operator support: `=`, `!=`, `<`, `>`, `HAS`, `HAS ALL`, `AND`, `OR`, `NOT`
+- Nested quantity handling for standard OPTIMADE fields
+
+**What NOMAD adds:**
+
+1. **Custom Field Mappings**: Maps OPTIMADE field names to NOMAD's Elasticsearch schema
+   - `nelements` → `optimade.nelements`
+   - `chemical_formula_hill` → `optimade.chemical_formula_hill`
+   - `id` → `entry_id`
+   - `_nmd_*` provider fields → respective NOMAD search fields
+
+2. **Custom Operators**: `HAS ONLY` implementation
+   ```python
+   # OPTIMADE: "elements HAS ONLY 'Si', 'O'"
+   # NOMAD translation: HAS ALL + exact length check
+   has_all = super()._has_query_op(quantities, 'HAS ALL', predicate_zip_list)
+   has_length = Q('term', **{quantity.length_quantity.backend_field: len(predicate_zip_list)})
+   return has_all & has_length
+   ```
+
+3. **Quantity Configuration**: Links length and nested quantities
+   ```python
+   quantities['elements'].length_quantity = quantities['nelements']
+   quantities['elements'].nested_quantity = quantities['elements_ratios']
+   ```
+
+**Query Translation Flow**:
+```
+OPTIMADE filter: "elements HAS ONLY 'Si', 'O'"
+    ↓ Lark Parser (optimade-python-tools)
+AST: HAS_ONLY(property='elements', values=['Si', 'O'])
+    ↓ ElasticTransformer (NOMAD extends optimade-python-tools)
+Elasticsearch DSL: Q('nested', ...) & Q('term', **{'optimade.nelements': 2})
+```
+
+**Key Pattern**: NOMAD leverages optimade-python-tools' proven query translation while customizing for NOMAD's specific Elasticsearch schema and adding non-standard operators.
 
 *See [API Backend Layer → Filter Parser](#3-filter-parser-filterparsepy) for detailed implementation.*
 
@@ -247,14 +327,19 @@ Elasticsearch Indexing
 
 ### Library Patching Strategy
 
-NOMAD applies extensive runtime patches to optimade-python-tools to accommodate NOMAD-specific requirements:
+NOMAD applies targeted runtime patches to optimade-python-tools to accommodate NOMAD-specific requirements:
 
 1. **ValidIdentifier Patching**: Replace strict regex validation to accept `_nmd_` prefix for provider fields
 2. **Logger Replacement**: Inject NOMAD's logger before library imports
-3. **Collection Replacement**: Swap MongoDB collection with custom `StructureCollection`
+3. **Collection Replacement**: Install custom `StructureCollection` (extends optimade-python-tools' approach with Archive Files)
 4. **Config Injection**: Set provider metadata and base URLs
 
-**Why Patching?** optimade-python-tools is designed for MongoDB-backed databases. Rather than fork, NOMAD patches at runtime to redirect functionality to Elasticsearch while maintaining specification compliance.
+**Why Patching?** While optimade-python-tools supports Elasticsearch, it assumes all data lives in Elasticsearch documents. NOMAD's hybrid model (Elasticsearch metadata + Archive Files for complete data) requires:
+- Custom collection implementation for two-phase retrieval
+- Field mapping adjustments for NOMAD's `optimade.*` namespace
+- Validation patches for NOMAD's provider field naming (`_nmd_` prefix)
+
+Rather than fork the library, NOMAD patches at runtime while reusing core components (Lark parser, ElasticTransformer base, FastAPI endpoints).
 
 *See [Key Implementation Details](#key-implementation-details) for patching details.*
 
@@ -262,17 +347,22 @@ NOMAD applies extensive runtime patches to optimade-python-tools to accommodate 
 
 **Query**: `/optimade/structures?filter=elements HAS "Si" AND nelements < 3`
 
-1. **optimade-python-tools** receives request at FastAPI endpoint
-2. **Lark Parser** (external) parses filter string → parse tree
-3. **ElasticTransformer** (NOMAD adapter) transforms parse tree → Elasticsearch query
-4. **StructureCollection** (NOMAD adapter) executes Elasticsearch search
-   - Query: `Q('nested', ...) & Q('range', optimade.nelements={'lt': 3}) & Q('term', processed=True)`
-   - Returns: `[(entry_id_1, upload_id_1), (entry_id_2, upload_id_2), ...]`
-5. **Archive Files** (NOMAD) loaded for each matched entry
-6. **Runtime Corrections** (NOMAD) fix legacy formula formats
-7. **Provider Fields** (NOMAD) resolved via JSON path traversal
-8. **optimade-python-tools** serializes response using Pydantic models
-9. **OPTIMADE JSON** returned to client
+1. **optimade-python-tools FastAPI endpoint** receives request
+2. **Lark Parser** (optimade-python-tools) parses filter string → Abstract Syntax Tree
+3. **ElasticTransformer** (NOMAD extends optimade-python-tools) transforms AST → Elasticsearch DSL query
+   - Inherited: Standard OPTIMADE operators and syntax handling
+   - NOMAD-specific: Field mapping to `optimade.*` namespace
+4. **StructureCollection** (NOMAD) executes two-phase retrieval:
+   - **Phase 1 - Elasticsearch**: Fast query on indexed metadata
+     - Query: `Q('nested', ...) & Q('range', **{'optimade.nelements': {'lt': 3}}) & Q('term', processed=True)`
+     - Returns: `[(entry_id_1, upload_id_1), (entry_id_2, upload_id_2), ...]`
+   - **Phase 2 - Archive Files**: Load complete structure data for matched entries only
+5. **Runtime Corrections** (NOMAD) fix legacy formula formats if needed
+6. **Provider Fields** (NOMAD) resolved via JSON path traversal if requested
+7. **optimade-python-tools Pydantic models** serialize response to OPTIMADE JSON format
+8. **OPTIMADE JSON** returned to client
+
+**Key Insight**: NOMAD reuses optimade-python-tools' query parsing (Lark) and Elasticsearch translation (ElasticTransformer base) while customizing for NOMAD's specific architecture (Archive Files + field mappings).
 
 **File Locations:**
 - Data Model: `nomad/datamodel/optimade.py` (332 lines)
@@ -283,6 +373,432 @@ NOMAD applies extensive runtime patches to optimade-python-tools to accommodate 
 - Provider Fields: `nomad/app/optimade/common.py` (84 lines)
 - Frontend: `gui/src/components/search/input/InputOptimade.js`
 - Tests: `tests/app/test_optimade.py`
+
+## Plugin Extensions to OPTIMADE
+
+NOMAD's plugin architecture allows plugins to extend OPTIMADE functionality by adding custom quantities that are exposed through the OPTIMADE API. This section covers how plugins can register their quantities in OPTIMADE namespaces.
+
+### Overview
+
+Plugins can expose their custom data through OPTIMADE via three approaches:
+
+1. **Provider-Specific Fields** (automatic, `_nmd_*` namespace)
+2. **Extended OptimadeEntry** (structured, `optimade.plugin_name.*` namespace)
+3. **Plugin Normalizers** (custom processing, any namespace)
+
+### Approach 1: Provider-Specific Fields (Automatic)
+
+**What it is:** Any plugin quantity with Elasticsearch annotation automatically becomes a queryable provider field.
+
+**Implementation:**
+
+```python
+# Plugin schema definition
+from nomad.metainfo import Quantity, Section
+from nomad.metainfo.elasticsearch_extension import Elasticsearch
+
+class MyCustomProperty(Section):
+    my_band_gap = Quantity(
+        type=float,
+        unit='eV',
+        a_elasticsearch=Elasticsearch(),  # Enables OPTIMADE query
+        description='Custom band gap calculation'
+    )
+```
+
+**OPTIMADE Query:**
+```
+GET /optimade/structures?filter=_nmd_results_properties_my_custom_property_my_band_gap > 2.0
+```
+
+**Resolution Flow:**
+```
+Query: _nmd_results_properties_my_custom_property_my_band_gap
+    ↓
+provider_specific_fields() discovers: "results_properties_my_custom_property_my_band_gap"
+    ↓
+Maps to archive path: results.properties.my_custom_property.my_band_gap
+    ↓
+Value resolved at query time from archive file (lazy loading)
+```
+
+**Advantages:**
+- Zero configuration required
+- Works out-of-the-box for any searchable quantity
+- No custom normalizer needed
+- Query-time resolution (always reflects latest data)
+
+**Disadvantages:**
+- Flat namespace (`_nmd_` prefix for all fields)
+- Not part of standard OPTIMADE schema
+- Less structured than dedicated OPTIMADE fields
+
+### Approach 2: Extending OptimadeEntry Schema
+
+**What it is:** Plugins extend the core `OptimadeEntry` schema with custom fields in the `optimade.*` namespace.
+
+**Use case:** When plugin data should be treated as first-class OPTIMADE properties, indexed in Elasticsearch for fast queries.
+
+**Implementation Steps:**
+
+**1. Extend OptimadeEntry Schema:**
+
+```python
+# my_plugin/optimade_schema.py
+from nomad.datamodel.optimade import OptimadeEntry
+from nomad.metainfo import Quantity, Section, SubSection
+from nomad.metainfo.elasticsearch_extension import Elasticsearch
+
+class PluginOptimadeExtension(Section):
+    """Plugin properties in OPTIMADE namespace"""
+
+    m_def = Section(label='Plugin OPTIMADE Extension')
+
+    custom_property = Quantity(
+        type=float,
+        a_elasticsearch=Elasticsearch(),
+        description='Plugin-specific property'
+    )
+
+    custom_array = Quantity(
+        type=float,
+        shape=['*'],
+        a_elasticsearch=Elasticsearch(),
+        description='Array property'
+    )
+
+# Extend OptimadeEntry with plugin subsection
+OptimadeEntry.plugin_data = SubSection(
+    sub_section=PluginOptimadeExtension.m_def,
+    label='Plugin Data'
+)
+```
+
+**2. Plugin Normalizer to Populate:**
+
+```python
+# my_plugin/normalizers.py
+from nomad.normalizing.normalizer import SystemBasedNormalizer
+from nomad.datamodel import EntryArchive
+
+class PluginOptimadeNormalizer(SystemBasedNormalizer):
+    """Populates plugin data in OPTIMADE namespace"""
+
+    # CRITICAL: Must run AFTER core OptimadeNormalizer (level 1)
+    normalizer_level = 2
+
+    def normalize_system(self, archive: EntryArchive, system, is_representative):
+        # Only process representative systems
+        if not is_representative:
+            return False
+
+        # Ensure core OPTIMADE data exists (created at level 1)
+        if not archive.metadata or not archive.metadata.optimade:
+            self.logger.warn('OPTIMADE data not found, skipping plugin normalization')
+            return False
+
+        try:
+            from .optimade_schema import PluginOptimadeExtension
+
+            # Create plugin section in OPTIMADE namespace
+            plugin_data = archive.metadata.optimade.m_create(PluginOptimadeExtension)
+
+            # Populate with derived data
+            plugin_data.custom_property = self._calculate_property(system)
+            plugin_data.custom_array = self._calculate_array(system)
+
+            return True
+
+        except Exception as e:
+            self.logger.warn('Plugin OPTIMADE normalization failed', exc_info=e)
+            return False
+
+    def _calculate_property(self, system):
+        # Plugin-specific calculation logic
+        return 42.0
+
+    def _calculate_array(self, system):
+        # Plugin-specific array calculation
+        return [1.0, 2.0, 3.0]
+```
+
+**3. Register in Plugin Entry Point:**
+
+```python
+# my_plugin/__init__.py
+from nomad.config.models.plugins import SchemaPackageEntryPoint
+
+class MyPlugin(SchemaPackageEntryPoint):
+    name = 'MyPlugin'
+
+    def load(self):
+        from . import schema
+        from . import optimade_schema  # Extends OptimadeEntry
+        from .normalizers import PluginOptimadeNormalizer
+
+        return schema.m_package, [PluginOptimadeNormalizer]
+
+plugin = MyPlugin(
+    name='MyPlugin',
+    description='Plugin with OPTIMADE extensions'
+)
+```
+
+**OPTIMADE Query:**
+
+```bash
+# Query via provider field (archive path)
+GET /optimade/structures?filter=_nmd_optimade_plugin_data_custom_property > 40.0
+
+# Query via Elasticsearch if properly mapped
+GET /optimade/structures?filter=_nmd_optimade_plugin_data_custom_property > 40.0
+```
+
+**Data Storage:**
+
+```
+Elasticsearch:
+  optimade.plugin_data.custom_property = 42.0
+  optimade.plugin_data.custom_array = [1.0, 2.0, 3.0]
+
+Archive:
+  metadata.optimade.plugin_data.custom_property = 42.0
+  metadata.optimade.plugin_data.custom_array = [1.0, 2.0, 3.0]
+```
+
+**Advantages:**
+- Structured namespace within OPTIMADE
+- Indexed in Elasticsearch for fast queries
+- Grouped by plugin (clear organization)
+- First-class OPTIMADE treatment
+
+**Disadvantages:**
+- Requires custom normalizer (level 2+)
+- Must coordinate with core OPTIMADE normalization
+- Still uses `_nmd_` prefix in queries (provider field)
+
+### Approach 3: Direct OptimadeEntry Extension (Advanced)
+
+**What it is:** Add quantities directly to OptimadeEntry (no subsection), making them appear as top-level OPTIMADE fields.
+
+**Implementation:**
+
+```python
+# my_plugin/optimade_schema.py
+from nomad.datamodel.optimade import OptimadeEntry, Optimade
+from nomad.metainfo import Quantity
+from nomad.metainfo.elasticsearch_extension import Elasticsearch
+
+# Add quantities directly to OptimadeEntry
+OptimadeEntry.m_def.quantities.append(
+    Quantity(
+        'plugin_custom_property',
+        type=float,
+        a_elasticsearch=Elasticsearch(),
+        a_optimade=Optimade(query=True, entry=True, sortable=True, type='float'),
+        description='Plugin-specific property as top-level OPTIMADE field'
+    )
+)
+```
+
+**Query:**
+```bash
+# Appears as standard OPTIMADE field (mapped to optimade.plugin_custom_property in ES)
+GET /optimade/structures?filter=_nmd_plugin_custom_property > 5.0
+```
+
+**Advantages:**
+- Top-level OPTIMADE field
+- Clean integration with standard fields
+
+**Disadvantages:**
+- Potential naming conflicts with standard OPTIMADE spec
+- Less clear that it's plugin-specific
+- Not recommended for multiple plugins (namespace collision)
+
+### Normalizer Ordering Considerations
+
+**Critical constraint:** Plugin OPTIMADE normalizers must run **after** core `OptimadeNormalizer` (level 1).
+
+**Why?** Core OptimadeNormalizer creates `metadata.optimade.*` structure at level 1. Plugin normalizers that extend it must run after this structure exists.
+
+**Ordering:**
+
+```
+Level 0: SystemNormalizer (NOMAD core)
+         Creates: run[0].system[-1] with atoms, lattice, positions
+         ↓
+Level 1: OptimadeNormalizer (NOMAD core)
+         Reads: run[0].system[-1]
+         Writes: metadata.optimade.* (standard OPTIMADE fields)
+         ↓
+Level 2+: Plugin OPTIMADE Normalizers
+          Reads: run[0].system[-1] + plugin results
+          Writes: metadata.optimade.plugin_data.* (extended fields)
+          ↓
+Elasticsearch Indexing: optimade.* + optimade.plugin_data.*
+         ↓
+OPTIMADE Queries: Can filter on both standard and plugin fields
+```
+
+**What if plugins modify core structure data?**
+
+If a plugin normalizer at level 2+ modifies data that **should affect standard OPTIMADE fields** (rare), you have two options:
+
+**Option A:** Re-run OptimadeNormalizer
+```python
+class MyPluginNormalizer(SystemBasedNormalizer):
+    normalizer_level = 2
+
+    def normalize_system(self, archive, system, is_representative):
+        # Modify system data
+        system.atoms.labels = self.recalculate_labels(system)
+
+        # Re-run OPTIMADE normalization to reflect changes
+        from nomad.normalizing.optimade import OptimadeNormalizer
+        OptimadeNormalizer().normalize_system(archive, system, is_representative)
+```
+
+**Option B:** Move OptimadeNormalizer to higher level (not recommended)
+```python
+# In NOMAD core (hypothetical)
+class OptimadeNormalizer(SystemBasedNormalizer):
+    normalizer_level = 99  # Run after all plugins
+```
+
+### Query and Response Examples
+
+**Query with plugin fields:**
+
+```bash
+GET /optimade/structures?filter=nelements=2 AND _nmd_optimade_plugin_data_custom_property > 40.0
+```
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "entry_id_123",
+      "type": "structures",
+      "attributes": {
+        "nelements": 2,
+        "elements": ["Si", "O"],
+        "chemical_formula_hill": "O2Si",
+        "_nmd_optimade_plugin_data_custom_property": 42.0,
+        "_nmd_optimade_plugin_data_custom_array": [1.0, 2.0, 3.0],
+        "_nmd_archive_url": "https://nomad-lab.eu/api/v1/archive/upload_id/entry_id_123"
+      }
+    }
+  ],
+  "meta": {
+    "data_returned": 1,
+    "more_data_available": false
+  }
+}
+```
+
+### Best Practices
+
+1. **Choose the right approach:**
+   - Simple queries on plugin data → Provider fields (Approach 1)
+   - Structured plugin namespace → OptimadeEntry subsection (Approach 2)
+   - Very rare: Top-level integration → Direct extension (Approach 3)
+
+2. **Normalizer level:**
+   - Always use `normalizer_level = 2` or higher for plugin OPTIMADE normalizers
+   - Level 1 is reserved for core OptimadeNormalizer
+
+3. **Error handling:**
+   - Check that `metadata.optimade` exists before extending
+   - Handle exceptions gracefully to avoid breaking entry processing
+
+4. **Elasticsearch indexing:**
+   - Add `a_elasticsearch=Elasticsearch()` to make fields queryable
+   - Large arrays may impact ES performance; consider provider field resolution
+
+5. **Documentation:**
+   - Document plugin-specific OPTIMADE fields
+   - Provide query examples for users
+
+6. **Testing:**
+   - Test normalization with representative systems
+   - Test OPTIMADE queries with plugin fields
+   - Verify Elasticsearch indexing
+
+### Common Patterns
+
+**Pattern 1: Derived Property in OPTIMADE**
+
+```python
+class BandGapOptimadeNormalizer(SystemBasedNormalizer):
+    normalizer_level = 2
+
+    def normalize_system(self, archive, system, is_representative):
+        if not is_representative or not archive.metadata.optimade:
+            return False
+
+        # Calculate band gap from DOS
+        dos = archive.run[-1].calculation[-1].outputs.electronic_dos
+        band_gap = self._calculate_band_gap_from_dos(dos)
+
+        # Add to OPTIMADE
+        plugin_ext = archive.metadata.optimade.m_create(PluginOptimadeExtension)
+        plugin_ext.electronic_band_gap = band_gap
+
+        return True
+```
+
+**Pattern 2: Method-Specific Property**
+
+```python
+class DFTOptimadeNormalizer(SystemBasedNormalizer):
+    normalizer_level = 2
+
+    def normalize_system(self, archive, system, is_representative):
+        # Only process if DFT calculation
+        if not self._is_dft_calculation(archive):
+            return False
+
+        # Add DFT-specific OPTIMADE fields
+        dft_ext = archive.metadata.optimade.m_create(DFTOptimadeExtension)
+        dft_ext.xc_functional = self._get_xc_functional(archive)
+        dft_ext.basis_set = self._get_basis_set(archive)
+
+        return True
+```
+
+**Pattern 3: Workflow Result in OPTIMADE**
+
+```python
+class WorkflowOptimadeNormalizer(SystemBasedNormalizer):
+    normalizer_level = 3  # After workflow normalizers
+
+    def normalize_system(self, archive, system, is_representative):
+        # Extract workflow results
+        if archive.workflow and archive.workflow.results:
+            workflow_ext = archive.metadata.optimade.m_create(WorkflowOptimadeExtension)
+            workflow_ext.convergence_achieved = archive.workflow.results.converged
+            workflow_ext.final_energy = archive.workflow.results.energy
+
+        return True
+```
+
+### Summary
+
+Plugin OPTIMADE extensions enable:
+- **Custom properties** exposed via OPTIMADE API
+- **Structured namespaces** for plugin-specific data
+- **Elasticsearch indexing** for fast queries
+- **Query-time resolution** for dynamic data
+
+Key requirements:
+- Normalizer level ≥ 2 (after core OPTIMADE)
+- Proper error handling
+- Elasticsearch annotations for indexing
+
+This architecture allows plugins to seamlessly extend NOMAD's OPTIMADE functionality while maintaining compatibility with the OPTIMADE specification and NOMAD's existing infrastructure.
 
 ## Data Model Layer
 
