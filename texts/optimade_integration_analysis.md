@@ -1797,7 +1797,106 @@ def _run_db_query(self, criteria: dict[str, Any], single_entry=False):
 
 ## Configuration
 
+### OPTIMADE Endpoint Architecture
+
+**Key Question:** Is there a special OPTIMADE endpoint or are queries converted and redirected to NOMAD's regular API?
+
+**Answer:** NOMAD has a **separate, dedicated OPTIMADE endpoint**. Queries are NOT converted and redirected to NOMAD's standard `/entries/query` endpoint.
+
+#### Separate FastAPI Application
+
+OPTIMADE runs as a distinct FastAPI application mounted within NOMAD's main application:
+
+```python
+# nomad/app/optimade/__init__.py:132-195
+from optimade.server import main as optimade
+
+# optimade-python-tools provides complete FastAPI app
+optimade_app = optimade.app  # Separate app with /structures, /info, /links endpoints
+
+# NOMAD mounts this at /optimade
+# In main NOMAD app:
+app.mount('/optimade', optimade_app)
+```
+
+**Result:**
+```
+NOMAD API:     /api/v1/entries/query          (NOMAD's main search)
+OPTIMADE API:  /api/v1/optimade/structures    (Separate OPTIMADE app)
+```
+
+#### Request Flow Comparison
+
+**OPTIMADE Request (Separate Path):**
+```
+Client → /optimade/structures?filter=nelements=2
+    ↓
+optimade-python-tools FastAPI endpoints
+    ↓
+StructureCollection.find() [NOMAD adapter]
+    ↓
+Elasticsearch + Archive Files
+    ↓
+OPTIMADE JSON response
+```
+
+**NOMAD Regular API (Different Path):**
+```
+Client → /entries/query {"query": {"results.material.elements": "Si"}}
+    ↓
+NOMAD FastAPI endpoints
+    ↓
+NOMAD search() function
+    ↓
+Elasticsearch
+    ↓
+NOMAD JSON response
+```
+
+**No conversion/redirection occurs between these endpoints.**
+
+#### Why Separate Endpoints?
+
+1. **OPTIMADE Specification:** Defines mandatory endpoints (`/structures`, `/info`, `/links`)
+2. **Different Query Languages:**
+   - OPTIMADE: `filter=elements HAS "Si" AND nelements < 3`
+   - NOMAD: `{"query": {"results.material.elements": "Si", "results.material.n_elements:lt": 3}}`
+3. **Different Response Formats:**
+   - OPTIMADE: `{"data": [{"type": "structures", "attributes": {...}}], "meta": {...}}`
+   - NOMAD: `{"data": [{"entry_id": "...", "results": {...}}], "pagination": {...}}`
+
+#### Shared Infrastructure
+
+While endpoints are separate, they share backends:
+
+```
+┌──────────────────────────────────────────────┐
+│      NOMAD FastAPI Application               │
+│                                              │
+│  ┌─────────────────┐  ┌──────────────────┐  │
+│  │ /entries/query  │  │ /optimade/*      │  │
+│  │ (NOMAD API)     │  │ (OPTIMADE API)   │  │
+│  └────────┬────────┘  └────────┬─────────┘  │
+│           │                    │             │
+└───────────┼────────────────────┼─────────────┘
+            │                    │
+            └──────┬─────────────┘
+                   ↓
+      ┌────────────────────────┐
+      │ Shared Infrastructure  │
+      ├────────────────────────┤
+      │ • Elasticsearch (ES)   │
+      │ • Archive Files (HDF5) │
+      │ • Upload Management    │
+      │ • Authentication       │
+      └────────────────────────┘
+```
+
+**Shared:** Data storage, authentication, metadata
+**Not Shared:** Request parsing, query execution, response formatting
+
 ### OPTIMADE Config File
+
 `packages/nomad-FAIR/nomad/app/optimade/optimade_config.json`
 
 ```json
@@ -1831,9 +1930,240 @@ Configured via `nomad.yaml`:
 ```yaml
 services:
   api_base_path: '/nomad/oasis/api/v1'
+  api_host: 'nomad-lab.eu'
+  https: true
 ```
 
-OPTIMADE endpoint becomes: `/nomad/oasis/api/v1/optimade/structures`
+**Resulting OPTIMADE endpoint:**
+```
+https://nomad-lab.eu/nomad/oasis/api/v1/optimade/structures
+```
+
+**How it's constructed** (`nomad/app/optimade/__init__.py:107-111`):
+
+```python
+CONFIG.root_path = f'{config.services.api_base_path}/optimade'
+# Results in: '/nomad/oasis/api/v1/optimade'
+
+CONFIG.base_url = '{}://{}'.format(
+    'https' if config.services.https else 'http',
+    config.services.api_host.strip('/'),
+)
+# Results in: 'https://nomad-lab.eu'
+```
+
+### Local Development Configuration
+
+For locally hosted NOMAD instances, the OPTIMADE endpoint location depends on your `nomad.yaml` configuration:
+
+#### Default Local Setup
+
+**Configuration:**
+```yaml
+# nomad.yaml
+services:
+  api_host: 'localhost:8000'
+  api_base_path: '/api/v1'
+  https: false
+```
+
+**Resulting Endpoints:**
+- Backend Server: `http://localhost:8000`
+- OPTIMADE Structures: `http://localhost:8000/api/v1/optimade/structures`
+- OPTIMADE Info: `http://localhost:8000/api/v1/optimade/info`
+- OPTIMADE Links: `http://localhost:8000/api/v1/optimade/links`
+
+#### Common Local Configurations
+
+**Scenario 1: Default Development**
+```yaml
+services:
+  api_host: 'localhost:8000'
+  api_base_path: '/api/v1'
+```
+→ `http://localhost:8000/api/v1/optimade/structures`
+
+**Scenario 2: Simplified Path**
+```yaml
+services:
+  api_host: 'localhost:8000'
+  api_base_path: ''
+```
+→ `http://localhost:8000/optimade/structures`
+
+**Scenario 3: Custom Port**
+```yaml
+services:
+  api_host: 'localhost:9000'
+  api_base_path: '/nomad/api'
+```
+→ `http://localhost:9000/nomad/api/optimade/structures`
+
+#### Testing Local OPTIMADE Endpoint
+
+**1. Start NOMAD Backend:**
+```bash
+cd /path/to/nomad-distro-schema
+uv run poe start  # Starts on port 8000 by default
+```
+
+**2. Test Info Endpoint:**
+```bash
+curl http://localhost:8000/api/v1/optimade/info
+```
+
+**Expected Response:**
+```json
+{
+  "data": {
+    "type": "info",
+    "id": "/",
+    "attributes": {
+      "api_version": "v1.0.0",
+      "available_api_versions": [...],
+      "formats": ["json"],
+      "entry_types_by_format": {
+        "json": ["structures"]
+      }
+    }
+  }
+}
+```
+
+**3. Query Structures:**
+```bash
+curl "http://localhost:8000/api/v1/optimade/structures?filter=nelements=2&page_limit=5"
+```
+
+#### Finding Your Configuration
+
+**Check YAML configuration:**
+```bash
+cat nomad.yaml | grep -A 5 "services:"
+```
+
+**Check from Python:**
+```python
+from nomad.config import config
+
+print(f"API Host: {config.services.api_host}")
+print(f"API Base Path: {config.services.api_base_path}")
+print(f"HTTPS: {config.services.https}")
+print(f"Full OPTIMADE URL: {config.api_url()}/optimade/structures")
+```
+
+#### Docker/Container Setup
+
+**docker-compose.yml configuration:**
+```yaml
+services:
+  nomad:
+    ports:
+      - "8000:8000"  # Host:Container
+    environment:
+      NOMAD_SERVICES_API_HOST: "localhost:8000"
+      NOMAD_SERVICES_API_BASE_PATH: "/api/v1"
+```
+
+**Access patterns:**
+- From host: `http://localhost:8000/api/v1/optimade/structures`
+- From container: `http://nomad:8000/api/v1/optimade/structures`
+
+#### Quick Test Script
+
+```bash
+#!/bin/bash
+# test_optimade_local.sh
+
+HOST="localhost:8000"
+BASE_PATH="/api/v1"
+OPTIMADE_URL="http://${HOST}${BASE_PATH}/optimade"
+
+echo "Testing OPTIMADE endpoint at: ${OPTIMADE_URL}"
+echo ""
+
+# Test info endpoint
+echo "1. Testing /info endpoint..."
+curl -s "${OPTIMADE_URL}/info" | jq -r '.data.attributes.api_version'
+
+# Test structures endpoint
+echo "2. Testing /structures endpoint..."
+curl -s "${OPTIMADE_URL}/structures?page_limit=1" | jq -r '.meta.data_returned'
+
+# Test with filter
+echo "3. Testing filter query..."
+curl -s "${OPTIMADE_URL}/structures?filter=nelements=2&page_limit=1" | \
+  jq -r '.data[0].attributes.chemical_formula_hill'
+```
+
+#### Common Issues
+
+**1. Port Already in Use**
+```bash
+# Check what's using port 8000
+lsof -i :8000
+
+# Use different port
+services:
+  api_host: 'localhost:8001'
+```
+
+**2. 404 Not Found**
+```bash
+# Verify backend is running
+curl http://localhost:8000/alive
+
+# Check configured path
+curl http://localhost:8000/api/v1/optimade/info
+```
+
+**3. Connection Refused**
+- Ensure Docker services running: `docker compose ps`
+- Check backend logs: `docker compose logs nomad`
+- Verify nomad.yaml configuration loaded correctly
+
+### Accessing OPTIMADE Data via NOMAD API
+
+**Can you query OPTIMADE data through NOMAD's regular API?**
+
+Yes, but you get NOMAD format, not OPTIMADE format:
+
+```bash
+# Via NOMAD API (not OPTIMADE-compliant)
+POST /api/v1/entries/query
+{
+  "required": {
+    "include": ["entry_id", "optimade.*"]
+  },
+  "query": {
+    "optimade.nelements": 2
+  }
+}
+
+# Response: NOMAD format
+{
+  "data": [{
+    "entry_id": "...",
+    "optimade": {
+      "nelements": 2,
+      "elements": ["Si", "O"],
+      "chemical_formula_hill": "O2Si"
+    }
+  }]
+}
+```
+
+**Differences:**
+- NOMAD query syntax (not OPTIMADE filter language)
+- NOMAD response format (not OPTIMADE JSON structure)
+- No OPTIMADE specification compliance
+
+**Use cases:**
+- Internal NOMAD applications
+- When you need both OPTIMADE and non-OPTIMADE data
+- Custom data processing workflows
+
+The `optimade.*` data exists in Elasticsearch and can be queried directly through NOMAD's API, but this bypasses OPTIMADE specification compliance.
 
 ## Testing Strategy
 
