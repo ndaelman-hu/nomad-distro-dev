@@ -31,6 +31,7 @@ nomad-measurements = { workspace = true }
 [dependency-groups]
 dev = [
   "nomad-lab[parsing, infrastructure, dev]>=1.3.4",
+  "nomad-parser-plugin-boss[dev]",
   "poethepoet>=0.29.0",
 ]
 
