@@ -130,6 +130,14 @@ override-dependencies = ["nomad-lab"]
 
 The bare package name (no version specifier) replaces any version a dependent ships, so resolution uses your local checkout rather than a PyPI release. Unlike `constraint-dependencies`, which only *narrows* an existing range, `override-dependencies` *replaces* dependents' specifiers outright — which is what lets the local copy take over. Overrides accept [registry version specifiers only](https://docs.astral.sh/uv/reference/settings/#override-dependencies); the local source itself still comes from `[tool.uv.sources]`. Use overrides sparingly, only to unblock a local project.
 
+Be aware of the trade-offs before reaching for an unconstrained override:
+
+- It suppresses `uv`'s conflict detection. Normally `uv` fails at resolution time when two packages need incompatible versions; the override tells `uv` to stop checking, so an incompatibility resurfaces later as a runtime `ImportError`/`AttributeError`, or as subtly wrong behavior.
+- `uv` does not report which pins it overrode, so when the local checkout drifts behind what a consumer expects there is no obvious cause.
+- It drops the version specifier from **every** dependent — direct and transitive — not just the one you have in mind. A package that pinned `nomad-lab>=X` for an API added in `X` silently resolves to whatever the local checkout provides.
+
+If you can name the local version, prefer a constrained override (`override-dependencies = ["nomad-lab==<local-version>"]`) so genuinely incompatible consumers still fail loudly rather than breaking silently.
+
 </details>
 
  > [!NOTE]
