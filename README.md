@@ -115,19 +115,22 @@ In this example, we'll set up the development environment for a developer workin
    nomad-parser-plugins-electronic = { workspace = true }
    ```
 
- > [!NOTE]
- >
- > When adding a local project, another package in the tree may pin one of its dependencies to a released version. That pin fights the local workspace source, *so `uv` won't use your local copy and resolution fails*. Add an **unconstrained** override so `uv` drops every dependent's pin and falls back to the local checkout:
- >
- > ```toml
- > [tool.uv.sources]
- > nomad-lab = { workspace = true }   # already present — points at packages/nomad-FAIR
- >
- > [tool.uv]
- > override-dependencies = ["nomad-lab"]
- > ```
- >
- > The bare package name (no version specifier) replaces any version a dependent ships, so resolution uses your local checkout rather than a PyPI release. Unlike `constraint-dependencies`, which only *narrows* an existing range, `override-dependencies` *replaces* dependents' specifiers outright — which is what lets the local copy take over. Overrides accept [registry version specifiers only](https://docs.astral.sh/uv/reference/settings/#override-dependencies); the local source itself still comes from `[tool.uv.sources]`. Use overrides sparingly, only to unblock a local project.
+<details>
+<summary><b>Advanced: overriding a dependent's version pin</b></summary>
+
+When adding a local project, another package in the tree may pin one of its dependencies to a released version. That pin fights the local workspace source, *so `uv` won't use your local copy and resolution fails*. Add an **unconstrained** override so `uv` drops every dependent's pin and falls back to the local checkout:
+
+```toml
+[tool.uv.sources]
+nomad-lab = { workspace = true }   # already present — points at packages/nomad-FAIR
+
+[tool.uv]
+override-dependencies = ["nomad-lab"]
+```
+
+The bare package name (no version specifier) replaces any version a dependent ships, so resolution uses your local checkout rather than a PyPI release. Unlike `constraint-dependencies`, which only *narrows* an existing range, `override-dependencies` *replaces* dependents' specifiers outright — which is what lets the local copy take over. Overrides accept [registry version specifiers only](https://docs.astral.sh/uv/reference/settings/#override-dependencies); the local source itself still comes from `[tool.uv.sources]`. Use overrides sparingly, only to unblock a local project.
+
+</details>
 
  > [!NOTE]
  > You can also use `uv` to install a specific branch of the plugin without adding a submodule locally.
