@@ -127,7 +127,7 @@ In this example, we'll set up the development environment for a developer workin
   override-dependencies = ["nomad-lab"]
   ```
 
-  The bare package name replaces any version a dependent ships. Unlike `constraint-dependencies`, which only *narrows* an existing range, `override-dependencies` *replaces* dependents' specifiers outright. Overrides accept [registry version specifiers only](https://docs.astral.sh/uv/reference/settings/#override-dependencies); the local source still comes from `[tool.uv.sources]`. Trade-offs, most important first:
+  Read more about `override-dependencies` in the uv reference [guide](https://docs.astral.sh/uv/reference/settings/#override-dependencies). Here are some trade-offs to be aware of when using overrides:
 
   - It drops the version specifier from **every** dependent — direct and transitive. A package that pinned `nomad-lab>=X` for an API added in `X` silently resolves to whatever the local checkout provides, so functionality can break in subtle ways.
   - `uv` also stops flagging version conflicts and never reports which pins it overrode, so incompatibilities surface later as runtime errors with no obvious cause.
